@@ -25,6 +25,9 @@
 #include<chrono>
 #include "pointcloudmapping.h"
 #include<opencv2/core/core.hpp>
+
+#include<opencv2/imgcodecs/legacy/constants_c.h> //# AE: to solve a compilation problem of missing CV_LOAD_IMAGE_UNCHANGED
+
 #include<stdlib.h>
 
 #include <cstdio>

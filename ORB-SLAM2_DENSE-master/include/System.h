@@ -26,6 +26,11 @@
 #include<thread>
 #include<opencv2/core/core.hpp>
 
+//# Adding to allow using OpenCV 4
+#include <opencv2/imgproc/types_c.h>
+#include <opencv2/opencv.hpp>
+//using namespace cv; //# AE
+
 #include "Tracking.h"
 #include "FrameDrawer.h"
 #include "MapDrawer.h"

@@ -12,6 +12,7 @@
 #include <tf/transform_datatypes.h>
 #include <tf_conversions/tf_eigen.h>
 #include <pcl_conversions/pcl_conversions.h>
+#include <pcl/conversions.h>
 
 // PCL
 #include <pcl/segmentation/sac_segmentation.h>

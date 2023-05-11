@@ -29,5 +29,10 @@ make -j4
 
 cd ..
 
+## building bin_vocabulary
+###cc -I include -I ./ tools/bin_vocabulary.cc
+##cc -I include -I ./ -I /usr/include/opencv4 tools/bin_vocabulary.cc
+##cc tools/bin_vocabulary.cc
+
 echo "Converting vocabulary to binary"
 ./tools/bin_vocabulary

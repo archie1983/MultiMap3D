@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 2.8)
 project(ORB_SLAM2)
 
+# Adding to allow using PCL
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
 SET(CMAKE_EXPORT_COMPILE_COMMANDS "ON")
 
 #IF(NOT CMAKE_BUILD_TYPE)
@@ -34,9 +38,11 @@ endif()
 
 LIST(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
 
-find_package(OpenCV 3.4 QUIET)
+#find_package(OpenCV 3.4 QUIET)
+find_package(OpenCV 4.2.0 QUIET)
 if(NOT OpenCV_FOUND)
-set(OpenCV_DIR "/usr/share/OpenCV")
+#set(OpenCV_DIR "/usr/share/OpenCV")
+set(OpenCV_DIR /usr/local/include/opencv4)
    find_package(OpenCV 2.4 QUIET)
    if(NOT OpenCV_FOUND)
       message(FATAL_ERROR "OpenCV > 2.4.3 not found.")
@@ -46,7 +52,7 @@ set(OpenCV_DIR "/usr/share/OpenCV")
    message(STATUS "OpenCV Libraries: ${OpenCV_LIBRARIES}")
 endif()
 
-find_package(Eigen3 3.1.0 REQUIRED)
+find_package(Eigen3 3.1.0 REQUIRED NO_MODULE)
 find_package(Pangolin REQUIRED)
 # adding for point cloud viewer and mapper
 find_package( PCL 1.7 REQUIRED )

@@ -81,7 +81,9 @@ protected:
     // store keyframe
     condition_variable  keyFrameUpdated;
     mutex               keyFrameUpdateMutex;
-    vector<PointCloude, Eigen::aligned_allocator<Eigen::Isometry3d> >     pointcloud;
+    vector<PointCloude, Eigen::aligned_allocator<PointCloude> >     pointcloud;
+//    vector<PointCloude, Eigen::aligned_allocator<Eigen::Isometry3d> >     pointcloud;
+//    vector<PointCloude, Eigen::aligned_allocator<PointCloude::PointCloud::Ptr, Eigen::Isometry3d, int> >     pointcloud;
     
     // data to generate point clouds
     vector<KeyFrame*>       keyframes;

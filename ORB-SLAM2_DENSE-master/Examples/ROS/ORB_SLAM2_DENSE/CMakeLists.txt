@@ -7,6 +7,8 @@ set( CMAKE_EXPORT_COMPILE_COMMANDS "ON" )
 #include_directories(/usr/include/pcl-1.7)
 #rosbuild_init()
 
+#set(CMAKE_CXX_STANDARD 14) # AE added to allow compilation with c++14
+
 #IF(NOT ROS_BUILD_TYPE)
 #  SET(ROS_BUILD_TYPE Release)
 #ENDIF()
@@ -20,9 +22,14 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}   -O3 -march=native -g")
 
 # Check C++11 or C++0x support
 include(CheckCXXCompilerFlag)
+CHECK_CXX_COMPILER_FLAG("-std=c++14" COMPILER_SUPPORTS_CXX14) #AE
 CHECK_CXX_COMPILER_FLAG("-std=c++11" COMPILER_SUPPORTS_CXX11)
 CHECK_CXX_COMPILER_FLAG("-std=c++0x" COMPILER_SUPPORTS_CXX0X)
-if(COMPILER_SUPPORTS_CXX11)
+if(COMPILER_SUPPORTS_CXX14) #AE
+   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14") #AE
+   add_definitions(-DCOMPILEDWITHC14) #AE
+   message(STATUS "Using flag -std=c++14.") #AE
+elseif(COMPILER_SUPPORTS_CXX11) #AE
    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
    add_definitions(-DCOMPILEDWITHC11)
    message(STATUS "Using flag -std=c++11.")
@@ -49,7 +56,8 @@ find_package(catkin REQUIRED COMPONENTS
     tf_conversions  
 )
 
-find_package(OpenCV 3.0 QUIET)
+#find_package(OpenCV 3.0 QUIET)
+find_package(OpenCV 4.2.0 QUIET)
 if(NOT OpenCV_FOUND)
 set(OpenCV_DIR "/usr/share/OpenCV")
    find_package(OpenCV 2.4 QUIET)
