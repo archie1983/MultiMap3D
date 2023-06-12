@@ -69,7 +69,8 @@ set(OpenCV_DIR "/usr/share/OpenCV")
    message(STATUS "OpenCV Libraries: ${OpenCV_LIBRARIES}")
 endif()
 
-find_package(Eigen3 REQUIRED)
+#find_package(Eigen3 REQUIRED)
+find_package(Eigen3 3.1.0 REQUIRED NO_MODULE)
 find_package(Pangolin REQUIRED)
 find_package( PCL 1.7 REQUIRED )
 
