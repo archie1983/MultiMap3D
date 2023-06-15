@@ -27,8 +27,8 @@ mot_tracker = Sort(max_age=3, min_hits=1, iou_threshold=0.3)
 # config_file = '/media/zhou/0EE2C649E2C634AD/mmdetection3d/configs/fcaf3d/fcaf3d_8x2_sunrgbd-3d-10class.py'
 # checkpoint_file = '/media/zhou/0EE2C649E2C634AD/mmdetection3d/checkpoints/fcaf3d_8x2_sunrgbd-3d-10class_20220805_165017.pth'
 
-config_file = '/media/zhou/0EE2C649E2C634AD/mmdetection3d/configs/fcaf3d/fcaf3d_8x2_scannet-3d-18class.py'
-checkpoint_file = '/media/zhou/0EE2C649E2C634AD/mmdetection3d/checkpoints/fcaf3d_8x2_scannet-3d-18class_20220805_084956.pth'
+config_file = '/ae_src/ros/src/MultiMap3D/configs/fcaf3d/fcaf3d_8x2_scannet-3d-18class.py'
+checkpoint_file = '/ae_src/ros/src/MultiMap3D/checkpoints/fcaf3d_8x2_scannet-3d-18class_20220805_084956.pth'
 
 model = init_model(config_file, checkpoint_file, device='cuda:0')
 
