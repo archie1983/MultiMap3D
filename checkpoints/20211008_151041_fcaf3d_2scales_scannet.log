@@ -1,0 +1,955 @@
+2021-10-08 15:10:42,008 - mmdet - INFO - Environment info:
+------------------------------------------------------------
+sys.platform: linux
+Python: 3.7.10 (default, Feb 26 2021, 18:47:35) [GCC 7.3.0]
+CUDA available: True
+GPU 0,1: GeForce GTX 1080 Ti
+CUDA_HOME: /usr/local/cuda
+NVCC: Cuda compilation tools, release 10.2, V10.2.89
+GCC: gcc (Ubuntu 7.5.0-3ubuntu1~18.04) 7.5.0
+PyTorch: 1.8.1
+PyTorch compiling details: PyTorch built with:
+  - GCC 7.3
+  - C++ Version: 201402
+  - Intel(R) oneAPI Math Kernel Library Version 2021.2-Product Build 20210312 for Intel(R) 64 architecture applications
+  - Intel(R) MKL-DNN v1.7.0 (Git Hash 7aed236906b1f7a05c0917e5257a1af05e9ff683)
+  - OpenMP 201511 (a.k.a. OpenMP 4.5)
+  - NNPACK is enabled
+  - CPU capability usage: AVX2
+  - CUDA Runtime 10.2
+  - NVCC architecture flags: -gencode;arch=compute_37,code=sm_37;-gencode;arch=compute_50,code=sm_50;-gencode;arch=compute_60,code=sm_60;-gencode;arch=compute_61,code=sm_61;-gencode;arch=compute_70,code=sm_70;-gencode;arch=compute_75,code=sm_75;-gencode;arch=compute_37,code=compute_37
+  - CuDNN 7.6.5
+  - Magma 2.5.2
+  - Build settings: BLAS_INFO=mkl, BUILD_TYPE=Release, CUDA_VERSION=10.2, CUDNN_VERSION=7.6.5, CXX_COMPILER=/opt/rh/devtoolset-7/root/usr/bin/c++, CXX_FLAGS= -Wno-deprecated -fvisibility-inlines-hidden -DUSE_PTHREADPOOL -fopenmp -DNDEBUG -DUSE_KINETO -DUSE_FBGEMM -DUSE_QNNPACK -DUSE_PYTORCH_QNNPACK -DUSE_XNNPACK -O2 -fPIC -Wno-narrowing -Wall -Wextra -Werror=return-type -Wno-missing-field-initializers -Wno-type-limits -Wno-array-bounds -Wno-unknown-pragmas -Wno-sign-compare -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wno-unused-result -Wno-unused-local-typedefs -Wno-strict-overflow -Wno-strict-aliasing -Wno-error=deprecated-declarations -Wno-stringop-overflow -Wno-psabi -Wno-error=pedantic -Wno-error=redundant-decls -Wno-error=old-style-cast -fdiagnostics-color=always -faligned-new -Wno-unused-but-set-variable -Wno-maybe-uninitialized -fno-math-errno -fno-trapping-math -Werror=format -Wno-stringop-overflow, LAPACK_INFO=mkl, PERF_WITH_AVX=1, PERF_WITH_AVX2=1, PERF_WITH_AVX512=1, TORCH_VERSION=1.8.1, USE_CUDA=ON, USE_CUDNN=ON, USE_EXCEPTION_PTR=1, USE_GFLAGS=OFF, USE_GLOG=OFF, USE_MKL=ON, USE_MKLDNN=ON, USE_MPI=OFF, USE_NCCL=ON, USE_NNPACK=ON, USE_OPENMP=ON, 
+
+TorchVision: 0.9.1
+OpenCV: 4.5.3
+MMCV: 1.3.8
+MMCV Compiler: GCC 7.5
+MMCV CUDA Compiler: 10.2
+MMDetection: 2.14.0
+MMSegmentation: 0.14.1
+MMDetection3D: 0.15.0+a234e32
+------------------------------------------------------------
+
+2021-10-08 15:10:43,056 - mmdet - INFO - Distributed training: True
+2021-10-08 15:10:44,096 - mmdet - INFO - Config:
+voxel_size = 0.02
+model = dict(
+    type='SingleStageSparse3DDetector',
+    voxel_size=0.02,
+    backbone=dict(type='MEResNet3D', in_channels=3, depth=34),
+    neck_with_head=dict(
+        type='Fcaf3DNeckWithHead',
+        in_channels=(64, 128),
+        out_channels=128,
+        pts_threshold=100000,
+        n_classes=18,
+        n_reg_outs=6,
+        voxel_size=0.02,
+        assigner=dict(type='Fcaf3DAssigner', limit=27, topk=18, n_scales=2),
+        loss_bbox=dict(type='IoU3DLoss', loss_weight=1.0, with_yaw=False)),
+    train_cfg=dict(),
+    test_cfg=dict(nms_pre=1000, iou_thr=0.5, score_thr=0.01))
+optimizer = dict(type='AdamW', lr=0.001, weight_decay=0.0001)
+optimizer_config = dict(grad_clip=dict(max_norm=10, norm_type=2))
+lr_config = dict(policy='step', warmup=None, step=[8, 11])
+runner = dict(type='EpochBasedRunner', max_epochs=12)
+custom_hooks = [dict(type='EmptyCacheHook', after_iter=True)]
+checkpoint_config = dict(interval=1, max_keep_ckpts=1)
+log_config = dict(interval=50, hooks=[dict(type='TextLoggerHook')])
+dist_params = dict(backend='nccl')
+log_level = 'INFO'
+work_dir = './work_dirs/fcaf3d_scannet-3d-18class'
+load_from = None
+resume_from = None
+workflow = [('train', 1)]
+n_points = 100000
+dataset_type = 'ScanNetDataset'
+data_root = './data/scannet/'
+class_names = ('cabinet', 'bed', 'chair', 'sofa', 'table', 'door', 'window',
+               'bookshelf', 'picture', 'counter', 'desk', 'curtain',
+               'refrigerator', 'showercurtrain', 'toilet', 'sink', 'bathtub',
+               'garbagebin')
+train_pipeline = [
+    dict(
+        type='LoadPointsFromFile',
+        coord_type='DEPTH',
+        shift_height=False,
+        load_dim=6,
+        use_dim=[0, 1, 2, 3, 4, 5]),
+    dict(type='LoadAnnotations3D'),
+    dict(type='GlobalAlignment', rotation_axis=2),
+    dict(type='IndoorPointSample', num_points=100000),
+    dict(
+        type='RandomFlip3D',
+        sync_2d=False,
+        flip_ratio_bev_horizontal=0.5,
+        flip_ratio_bev_vertical=0.5),
+    dict(
+        type='GlobalRotScaleTrans',
+        rot_range=[-0.087266, 0.087266],
+        scale_ratio_range=[0.9, 1.1],
+        translation_std=[0.1, 0.1, 0.1],
+        shift_height=False),
+    dict(
+        type='DefaultFormatBundle3D',
+        class_names=('cabinet', 'bed', 'chair', 'sofa', 'table', 'door',
+                     'window', 'bookshelf', 'picture', 'counter', 'desk',
+                     'curtain', 'refrigerator', 'showercurtrain', 'toilet',
+                     'sink', 'bathtub', 'garbagebin')),
+    dict(type='Collect3D', keys=['points', 'gt_bboxes_3d', 'gt_labels_3d'])
+]
+test_pipeline = [
+    dict(
+        type='LoadPointsFromFile',
+        coord_type='DEPTH',
+        shift_height=False,
+        load_dim=6,
+        use_dim=[0, 1, 2, 3, 4, 5]),
+    dict(type='GlobalAlignment', rotation_axis=2),
+    dict(
+        type='MultiScaleFlipAug3D',
+        img_scale=(1333, 800),
+        pts_scale_ratio=1,
+        flip=False,
+        transforms=[
+            dict(
+                type='GlobalRotScaleTrans',
+                rot_range=[0, 0],
+                scale_ratio_range=[1.0, 1.0],
+                translation_std=[0, 0, 0]),
+            dict(
+                type='RandomFlip3D',
+                sync_2d=False,
+                flip_ratio_bev_horizontal=0.5,
+                flip_ratio_bev_vertical=0.5),
+            dict(type='IndoorPointSample', num_points=100000),
+            dict(
+                type='DefaultFormatBundle3D',
+                class_names=('cabinet', 'bed', 'chair', 'sofa', 'table',
+                             'door', 'window', 'bookshelf', 'picture',
+                             'counter', 'desk', 'curtain', 'refrigerator',
+                             'showercurtrain', 'toilet', 'sink', 'bathtub',
+                             'garbagebin'),
+                with_label=False),
+            dict(type='Collect3D', keys=['points'])
+        ])
+]
+data = dict(
+    samples_per_gpu=8,
+    workers_per_gpu=4,
+    train=dict(
+        type='RepeatDataset',
+        times=10,
+        dataset=dict(
+            type='ScanNetDataset',
+            data_root='./data/scannet/',
+            ann_file='./data/scannet/scannet_infos_train.pkl',
+            pipeline=[
+                dict(
+                    type='LoadPointsFromFile',
+                    coord_type='DEPTH',
+                    shift_height=False,
+                    load_dim=6,
+                    use_dim=[0, 1, 2, 3, 4, 5]),
+                dict(type='LoadAnnotations3D'),
+                dict(type='GlobalAlignment', rotation_axis=2),
+                dict(type='IndoorPointSample', num_points=100000),
+                dict(
+                    type='RandomFlip3D',
+                    sync_2d=False,
+                    flip_ratio_bev_horizontal=0.5,
+                    flip_ratio_bev_vertical=0.5),
+                dict(
+                    type='GlobalRotScaleTrans',
+                    rot_range=[-0.087266, 0.087266],
+                    scale_ratio_range=[0.9, 1.1],
+                    translation_std=[0.1, 0.1, 0.1],
+                    shift_height=False),
+                dict(
+                    type='DefaultFormatBundle3D',
+                    class_names=('cabinet', 'bed', 'chair', 'sofa', 'table',
+                                 'door', 'window', 'bookshelf', 'picture',
+                                 'counter', 'desk', 'curtain', 'refrigerator',
+                                 'showercurtrain', 'toilet', 'sink', 'bathtub',
+                                 'garbagebin')),
+                dict(
+                    type='Collect3D',
+                    keys=['points', 'gt_bboxes_3d', 'gt_labels_3d'])
+            ],
+            filter_empty_gt=True,
+            classes=('cabinet', 'bed', 'chair', 'sofa', 'table', 'door',
+                     'window', 'bookshelf', 'picture', 'counter', 'desk',
+                     'curtain', 'refrigerator', 'showercurtrain', 'toilet',
+                     'sink', 'bathtub', 'garbagebin'),
+            box_type_3d='Depth')),
+    val=dict(
+        type='ScanNetDataset',
+        data_root='./data/scannet/',
+        ann_file='./data/scannet/scannet_infos_val.pkl',
+        pipeline=[
+            dict(
+                type='LoadPointsFromFile',
+                coord_type='DEPTH',
+                shift_height=False,
+                load_dim=6,
+                use_dim=[0, 1, 2, 3, 4, 5]),
+            dict(type='GlobalAlignment', rotation_axis=2),
+            dict(
+                type='MultiScaleFlipAug3D',
+                img_scale=(1333, 800),
+                pts_scale_ratio=1,
+                flip=False,
+                transforms=[
+                    dict(
+                        type='GlobalRotScaleTrans',
+                        rot_range=[0, 0],
+                        scale_ratio_range=[1.0, 1.0],
+                        translation_std=[0, 0, 0]),
+                    dict(
+                        type='RandomFlip3D',
+                        sync_2d=False,
+                        flip_ratio_bev_horizontal=0.5,
+                        flip_ratio_bev_vertical=0.5),
+                    dict(type='IndoorPointSample', num_points=100000),
+                    dict(
+                        type='DefaultFormatBundle3D',
+                        class_names=('cabinet', 'bed', 'chair', 'sofa',
+                                     'table', 'door', 'window', 'bookshelf',
+                                     'picture', 'counter', 'desk', 'curtain',
+                                     'refrigerator', 'showercurtrain',
+                                     'toilet', 'sink', 'bathtub',
+                                     'garbagebin'),
+                        with_label=False),
+                    dict(type='Collect3D', keys=['points'])
+                ])
+        ],
+        classes=('cabinet', 'bed', 'chair', 'sofa', 'table', 'door', 'window',
+                 'bookshelf', 'picture', 'counter', 'desk', 'curtain',
+                 'refrigerator', 'showercurtrain', 'toilet', 'sink', 'bathtub',
+                 'garbagebin'),
+        test_mode=True,
+        box_type_3d='Depth'),
+    test=dict(
+        type='ScanNetDataset',
+        data_root='./data/scannet/',
+        ann_file='./data/scannet/scannet_infos_val.pkl',
+        pipeline=[
+            dict(
+                type='LoadPointsFromFile',
+                coord_type='DEPTH',
+                shift_height=False,
+                load_dim=6,
+                use_dim=[0, 1, 2, 3, 4, 5]),
+            dict(type='GlobalAlignment', rotation_axis=2),
+            dict(
+                type='MultiScaleFlipAug3D',
+                img_scale=(1333, 800),
+                pts_scale_ratio=1,
+                flip=False,
+                transforms=[
+                    dict(
+                        type='GlobalRotScaleTrans',
+                        rot_range=[0, 0],
+                        scale_ratio_range=[1.0, 1.0],
+                        translation_std=[0, 0, 0]),
+                    dict(
+                        type='RandomFlip3D',
+                        sync_2d=False,
+                        flip_ratio_bev_horizontal=0.5,
+                        flip_ratio_bev_vertical=0.5),
+                    dict(type='IndoorPointSample', num_points=100000),
+                    dict(
+                        type='DefaultFormatBundle3D',
+                        class_names=('cabinet', 'bed', 'chair', 'sofa',
+                                     'table', 'door', 'window', 'bookshelf',
+                                     'picture', 'counter', 'desk', 'curtain',
+                                     'refrigerator', 'showercurtrain',
+                                     'toilet', 'sink', 'bathtub',
+                                     'garbagebin'),
+                        with_label=False),
+                    dict(type='Collect3D', keys=['points'])
+                ])
+        ],
+        classes=('cabinet', 'bed', 'chair', 'sofa', 'table', 'door', 'window',
+                 'bookshelf', 'picture', 'counter', 'desk', 'curtain',
+                 'refrigerator', 'showercurtrain', 'toilet', 'sink', 'bathtub',
+                 'garbagebin'),
+        test_mode=True,
+        box_type_3d='Depth'))
+gpu_ids = range(0, 2)
+
+2021-10-08 15:10:44,096 - mmdet - INFO - Set random seed to 0, deterministic: False
+2021-10-08 15:10:44,181 - mmdet - INFO - Model:
+SingleStageSparse3DDetector(
+  (backbone): MEResNet3D(
+    (conv1): Sequential(
+      (0): MinkowskiConvolution(in=3, out=64, kernel_size=[3, 3, 3], stride=[2, 2, 2], dilation=[1, 1, 1])
+      (1): MinkowskiInstanceNorm(nchannels=64)
+      (2): MinkowskiReLU()
+      (3): MinkowskiMaxPooling(kernel_size=[2, 2, 2], stride=[2, 2, 2], dilation=[1, 1, 1])
+    )
+    (layer1): Sequential(
+      (0): BasicBlock(
+        (conv1): MinkowskiConvolution(in=64, out=64, kernel_size=[3, 3, 3], stride=[2, 2, 2], dilation=[1, 1, 1])
+        (norm1): MinkowskiBatchNorm(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): MinkowskiConvolution(in=64, out=64, kernel_size=[3, 3, 3], stride=[1, 1, 1], dilation=[1, 1, 1])
+        (norm2): MinkowskiBatchNorm(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): MinkowskiReLU()
+        (downsample): Sequential(
+          (0): MinkowskiConvolution(in=64, out=64, kernel_size=[1, 1, 1], stride=[2, 2, 2], dilation=[1, 1, 1])
+          (1): MinkowskiBatchNorm(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        )
+      )
+      (1): BasicBlock(
+        (conv1): MinkowskiConvolution(in=64, out=64, kernel_size=[3, 3, 3], stride=[1, 1, 1], dilation=[1, 1, 1])
+        (norm1): MinkowskiBatchNorm(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): MinkowskiConvolution(in=64, out=64, kernel_size=[3, 3, 3], stride=[1, 1, 1], dilation=[1, 1, 1])
+        (norm2): MinkowskiBatchNorm(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): MinkowskiReLU()
+      )
+      (2): BasicBlock(
+        (conv1): MinkowskiConvolution(in=64, out=64, kernel_size=[3, 3, 3], stride=[1, 1, 1], dilation=[1, 1, 1])
+        (norm1): MinkowskiBatchNorm(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): MinkowskiConvolution(in=64, out=64, kernel_size=[3, 3, 3], stride=[1, 1, 1], dilation=[1, 1, 1])
+        (norm2): MinkowskiBatchNorm(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): MinkowskiReLU()
+      )
+    )
+    (layer2): Sequential(
+      (0): BasicBlock(
+        (conv1): MinkowskiConvolution(in=64, out=128, kernel_size=[3, 3, 3], stride=[2, 2, 2], dilation=[1, 1, 1])
+        (norm1): MinkowskiBatchNorm(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): MinkowskiConvolution(in=128, out=128, kernel_size=[3, 3, 3], stride=[1, 1, 1], dilation=[1, 1, 1])
+        (norm2): MinkowskiBatchNorm(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): MinkowskiReLU()
+        (downsample): Sequential(
+          (0): MinkowskiConvolution(in=64, out=128, kernel_size=[1, 1, 1], stride=[2, 2, 2], dilation=[1, 1, 1])
+          (1): MinkowskiBatchNorm(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        )
+      )
+      (1): BasicBlock(
+        (conv1): MinkowskiConvolution(in=128, out=128, kernel_size=[3, 3, 3], stride=[1, 1, 1], dilation=[1, 1, 1])
+        (norm1): MinkowskiBatchNorm(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): MinkowskiConvolution(in=128, out=128, kernel_size=[3, 3, 3], stride=[1, 1, 1], dilation=[1, 1, 1])
+        (norm2): MinkowskiBatchNorm(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): MinkowskiReLU()
+      )
+      (2): BasicBlock(
+        (conv1): MinkowskiConvolution(in=128, out=128, kernel_size=[3, 3, 3], stride=[1, 1, 1], dilation=[1, 1, 1])
+        (norm1): MinkowskiBatchNorm(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): MinkowskiConvolution(in=128, out=128, kernel_size=[3, 3, 3], stride=[1, 1, 1], dilation=[1, 1, 1])
+        (norm2): MinkowskiBatchNorm(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): MinkowskiReLU()
+      )
+      (3): BasicBlock(
+        (conv1): MinkowskiConvolution(in=128, out=128, kernel_size=[3, 3, 3], stride=[1, 1, 1], dilation=[1, 1, 1])
+        (norm1): MinkowskiBatchNorm(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (conv2): MinkowskiConvolution(in=128, out=128, kernel_size=[3, 3, 3], stride=[1, 1, 1], dilation=[1, 1, 1])
+        (norm2): MinkowskiBatchNorm(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+        (relu): MinkowskiReLU()
+      )
+    )
+  )
+  (neck_with_head): Fcaf3DNeckWithHead(
+    (loss_centerness): CrossEntropyLoss()
+    (loss_bbox): IoU3DLoss()
+    (loss_cls): FocalLoss()
+    (pruning): MinkowskiPruning()
+    (out_block_0): Sequential(
+      (0): MinkowskiConvolution(in=64, out=128, kernel_size=[3, 3, 3], stride=[1, 1, 1], dilation=[1, 1, 1])
+      (1): MinkowskiBatchNorm(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (2): MinkowskiELU()
+    )
+    (up_block_1): Sequential(
+      (0): MinkowskiGenerativeConvolutionTranspose(in=128, out=64, kernel_size=[2, 2, 2], stride=[2, 2, 2], dilation=[1, 1, 1])
+      (1): MinkowskiBatchNorm(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (2): MinkowskiELU()
+      (3): MinkowskiConvolution(in=64, out=64, kernel_size=[3, 3, 3], stride=[1, 1, 1], dilation=[1, 1, 1])
+      (4): MinkowskiBatchNorm(64, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (5): MinkowskiELU()
+    )
+    (out_block_1): Sequential(
+      (0): MinkowskiConvolution(in=128, out=128, kernel_size=[3, 3, 3], stride=[1, 1, 1], dilation=[1, 1, 1])
+      (1): MinkowskiBatchNorm(128, eps=1e-05, momentum=0.1, affine=True, track_running_stats=True)
+      (2): MinkowskiELU()
+    )
+    (centerness_conv): MinkowskiConvolution(in=128, out=1, kernel_size=[1, 1, 1], stride=[1, 1, 1], dilation=[1, 1, 1])
+    (reg_conv): MinkowskiConvolution(in=128, out=6, kernel_size=[1, 1, 1], stride=[1, 1, 1], dilation=[1, 1, 1])
+    (cls_conv): MinkowskiConvolution(in=128, out=18, kernel_size=[1, 1, 1], stride=[1, 1, 1], dilation=[1, 1, 1])
+    (scales): ModuleList(
+      (0): Scale()
+      (1): Scale()
+    )
+  )
+)
+2021-10-08 15:10:48,355 - mmdet - INFO - Start running, host: root@644c4fc8d7ab, work_dir: /opt/project/work_dirs/fcaf3d_scannet-3d-18class
+2021-10-08 15:10:48,355 - mmdet - INFO - Hooks will be executed in the following order:
+before_run:
+(VERY_HIGH   ) StepLrUpdaterHook                  
+(NORMAL      ) CheckpointHook                     
+(NORMAL      ) DistEvalHook                       
+(VERY_LOW    ) TextLoggerHook                     
+ -------------------- 
+before_train_epoch:
+(VERY_HIGH   ) StepLrUpdaterHook                  
+(NORMAL      ) DistSamplerSeedHook                
+(NORMAL      ) DistEvalHook                       
+(NORMAL      ) EmptyCacheHook                     
+(LOW         ) IterTimerHook                      
+(VERY_LOW    ) TextLoggerHook                     
+ -------------------- 
+before_train_iter:
+(VERY_HIGH   ) StepLrUpdaterHook                  
+(NORMAL      ) DistEvalHook                       
+(LOW         ) IterTimerHook                      
+ -------------------- 
+after_train_iter:
+(ABOVE_NORMAL) OptimizerHook                      
+(NORMAL      ) CheckpointHook                     
+(NORMAL      ) DistEvalHook                       
+(NORMAL      ) EmptyCacheHook                     
+(LOW         ) IterTimerHook                      
+(VERY_LOW    ) TextLoggerHook                     
+ -------------------- 
+after_train_epoch:
+(NORMAL      ) CheckpointHook                     
+(NORMAL      ) DistEvalHook                       
+(NORMAL      ) EmptyCacheHook                     
+(VERY_LOW    ) TextLoggerHook                     
+ -------------------- 
+before_val_epoch:
+(NORMAL      ) DistSamplerSeedHook                
+(NORMAL      ) EmptyCacheHook                     
+(LOW         ) IterTimerHook                      
+(VERY_LOW    ) TextLoggerHook                     
+ -------------------- 
+before_val_iter:
+(LOW         ) IterTimerHook                      
+ -------------------- 
+after_val_iter:
+(NORMAL      ) EmptyCacheHook                     
+(LOW         ) IterTimerHook                      
+ -------------------- 
+after_val_epoch:
+(NORMAL      ) EmptyCacheHook                     
+(VERY_LOW    ) TextLoggerHook                     
+ -------------------- 
+2021-10-08 15:10:48,355 - mmdet - INFO - workflow: [('train', 1)], max: 12 epochs
+2021-10-08 15:11:12,210 - mmdet - INFO - Epoch [1][50/751]	lr: 1.000e-03, eta: 1:11:15, time: 0.477, data_time: 0.067, memory: 1400, loss_centerness: 0.6629, loss_bbox: 0.7140, loss_cls: 0.6617, loss: 2.0386, grad_norm: 0.9243
+2021-10-08 15:11:32,884 - mmdet - INFO - Epoch [1][100/751]	lr: 1.000e-03, eta: 1:06:08, time: 0.413, data_time: 0.012, memory: 1417, loss_centerness: 0.6493, loss_bbox: 0.5963, loss_cls: 0.4627, loss: 1.7083, grad_norm: 0.9266
+2021-10-08 15:11:52,770 - mmdet - INFO - Epoch [1][150/751]	lr: 1.000e-03, eta: 1:03:25, time: 0.398, data_time: 0.011, memory: 1465, loss_centerness: 0.6450, loss_bbox: 0.5590, loss_cls: 0.4232, loss: 1.6272, grad_norm: 1.0809
+2021-10-08 15:12:13,649 - mmdet - INFO - Epoch [1][200/751]	lr: 1.000e-03, eta: 1:02:37, time: 0.418, data_time: 0.011, memory: 1480, loss_centerness: 0.6419, loss_bbox: 0.5317, loss_cls: 0.3952, loss: 1.5688, grad_norm: 1.1473
+2021-10-08 15:12:34,039 - mmdet - INFO - Epoch [1][250/751]	lr: 1.000e-03, eta: 1:01:43, time: 0.408, data_time: 0.011, memory: 1517, loss_centerness: 0.6393, loss_bbox: 0.5177, loss_cls: 0.3778, loss: 1.5349, grad_norm: 1.1607
+2021-10-08 15:12:54,611 - mmdet - INFO - Epoch [1][300/751]	lr: 1.000e-03, eta: 1:01:06, time: 0.411, data_time: 0.011, memory: 1517, loss_centerness: 0.6365, loss_bbox: 0.5041, loss_cls: 0.3674, loss: 1.5080, grad_norm: 1.2506
+2021-10-08 15:13:14,937 - mmdet - INFO - Epoch [1][350/751]	lr: 1.000e-03, eta: 1:00:27, time: 0.406, data_time: 0.011, memory: 1517, loss_centerness: 0.6356, loss_bbox: 0.4957, loss_cls: 0.3562, loss: 1.4875, grad_norm: 1.2469
+2021-10-08 15:13:35,551 - mmdet - INFO - Epoch [1][400/751]	lr: 1.000e-03, eta: 0:59:59, time: 0.412, data_time: 0.010, memory: 1529, loss_centerness: 0.6351, loss_bbox: 0.4826, loss_cls: 0.3419, loss: 1.4596, grad_norm: 1.1637
+2021-10-08 15:13:55,930 - mmdet - INFO - Epoch [1][450/751]	lr: 1.000e-03, eta: 0:59:28, time: 0.408, data_time: 0.011, memory: 1529, loss_centerness: 0.6322, loss_bbox: 0.4729, loss_cls: 0.3325, loss: 1.4376, grad_norm: 1.2749
+2021-10-08 15:14:17,087 - mmdet - INFO - Epoch [1][500/751]	lr: 1.000e-03, eta: 0:59:13, time: 0.423, data_time: 0.011, memory: 1546, loss_centerness: 0.6310, loss_bbox: 0.4730, loss_cls: 0.3326, loss: 1.4366, grad_norm: 1.1341
+2021-10-08 15:14:38,271 - mmdet - INFO - Epoch [1][550/751]	lr: 1.000e-03, eta: 0:58:57, time: 0.424, data_time: 0.011, memory: 1546, loss_centerness: 0.6290, loss_bbox: 0.4623, loss_cls: 0.3258, loss: 1.4171, grad_norm: 1.1567
+2021-10-08 15:14:59,308 - mmdet - INFO - Epoch [1][600/751]	lr: 1.000e-03, eta: 0:58:38, time: 0.421, data_time: 0.011, memory: 1546, loss_centerness: 0.6320, loss_bbox: 0.4575, loss_cls: 0.3193, loss: 1.4087, grad_norm: 1.4645
+2021-10-08 15:15:20,359 - mmdet - INFO - Epoch [1][650/751]	lr: 1.000e-03, eta: 0:58:19, time: 0.421, data_time: 0.011, memory: 1546, loss_centerness: 0.6322, loss_bbox: 0.4464, loss_cls: 0.3104, loss: 1.3890, grad_norm: 1.2012
+2021-10-08 15:15:40,589 - mmdet - INFO - Epoch [1][700/751]	lr: 1.000e-03, eta: 0:57:50, time: 0.405, data_time: 0.011, memory: 1546, loss_centerness: 0.6280, loss_bbox: 0.4449, loss_cls: 0.3051, loss: 1.3780, grad_norm: 1.2391
+2021-10-08 15:16:01,692 - mmdet - INFO - Epoch [1][750/751]	lr: 1.000e-03, eta: 0:57:31, time: 0.422, data_time: 0.012, memory: 1546, loss_centerness: 0.6287, loss_bbox: 0.4385, loss_cls: 0.2997, loss: 1.3669, grad_norm: 1.0360
+2021-10-08 15:16:02,169 - mmdet - INFO - Saving checkpoint at 1 epochs
+2021-10-08 15:16:27,164 - mmdet - INFO - 
++----------------+---------+---------+---------+---------+
+| classes        | AP_0.25 | AR_0.25 | AP_0.50 | AR_0.50 |
++----------------+---------+---------+---------+---------+
+| cabinet        | 0.2815  | 0.8522  | 0.0896  | 0.4597  |
+| bed            | 0.8213  | 0.9506  | 0.6420  | 0.7654  |
+| chair          | 0.9026  | 0.9561  | 0.7665  | 0.8289  |
+| sofa           | 0.6534  | 0.9897  | 0.4915  | 0.9072  |
+| table          | 0.4864  | 0.8657  | 0.3864  | 0.7343  |
+| door           | 0.2931  | 0.8244  | 0.1068  | 0.4111  |
+| window         | 0.2341  | 0.8014  | 0.0319  | 0.2730  |
+| bookshelf      | 0.3503  | 0.9481  | 0.2331  | 0.7532  |
+| picture        | 0.0043  | 0.1081  | 0.0006  | 0.0135  |
+| counter        | 0.1959  | 0.6731  | 0.0202  | 0.2115  |
+| desk           | 0.5552  | 0.9449  | 0.3422  | 0.8189  |
+| curtain        | 0.3435  | 0.9104  | 0.1176  | 0.4776  |
+| refrigerator   | 0.2382  | 0.9825  | 0.2006  | 0.7544  |
+| showercurtrain | 0.5468  | 0.9643  | 0.0562  | 0.4286  |
+| toilet         | 0.9810  | 1.0000  | 0.8382  | 0.8966  |
+| sink           | 0.4857  | 0.6531  | 0.2404  | 0.3776  |
+| bathtub        | 0.8492  | 0.9677  | 0.5981  | 0.7742  |
+| garbagebin     | 0.2967  | 0.8132  | 0.1052  | 0.4943  |
++----------------+---------+---------+---------+---------+
+| Overall        | 0.4733  | 0.8447  | 0.2926  | 0.5767  |
++----------------+---------+---------+---------+---------+
+2021-10-08 15:16:27,496 - mmdet - INFO - Exp name: fcaf3d_scannet-3d-18class.py
+2021-10-08 15:16:27,497 - mmdet - INFO - Epoch(val) [1][156]	cabinet_AP_0.25: 0.2815, bed_AP_0.25: 0.8213, chair_AP_0.25: 0.9026, sofa_AP_0.25: 0.6534, table_AP_0.25: 0.4864, door_AP_0.25: 0.2931, window_AP_0.25: 0.2341, bookshelf_AP_0.25: 0.3503, picture_AP_0.25: 0.0043, counter_AP_0.25: 0.1959, desk_AP_0.25: 0.5552, curtain_AP_0.25: 0.3435, refrigerator_AP_0.25: 0.2382, showercurtrain_AP_0.25: 0.5468, toilet_AP_0.25: 0.9810, sink_AP_0.25: 0.4857, bathtub_AP_0.25: 0.8492, garbagebin_AP_0.25: 0.2967, mAP_0.25: 0.4733, cabinet_rec_0.25: 0.8522, bed_rec_0.25: 0.9506, chair_rec_0.25: 0.9561, sofa_rec_0.25: 0.9897, table_rec_0.25: 0.8657, door_rec_0.25: 0.8244, window_rec_0.25: 0.8014, bookshelf_rec_0.25: 0.9481, picture_rec_0.25: 0.1081, counter_rec_0.25: 0.6731, desk_rec_0.25: 0.9449, curtain_rec_0.25: 0.9104, refrigerator_rec_0.25: 0.9825, showercurtrain_rec_0.25: 0.9643, toilet_rec_0.25: 1.0000, sink_rec_0.25: 0.6531, bathtub_rec_0.25: 0.9677, garbagebin_rec_0.25: 0.8132, mAR_0.25: 0.8447, cabinet_AP_0.50: 0.0896, bed_AP_0.50: 0.6420, chair_AP_0.50: 0.7665, sofa_AP_0.50: 0.4915, table_AP_0.50: 0.3864, door_AP_0.50: 0.1068, window_AP_0.50: 0.0319, bookshelf_AP_0.50: 0.2331, picture_AP_0.50: 0.0006, counter_AP_0.50: 0.0202, desk_AP_0.50: 0.3422, curtain_AP_0.50: 0.1176, refrigerator_AP_0.50: 0.2006, showercurtrain_AP_0.50: 0.0562, toilet_AP_0.50: 0.8382, sink_AP_0.50: 0.2404, bathtub_AP_0.50: 0.5981, garbagebin_AP_0.50: 0.1052, mAP_0.50: 0.2926, cabinet_rec_0.50: 0.4597, bed_rec_0.50: 0.7654, chair_rec_0.50: 0.8289, sofa_rec_0.50: 0.9072, table_rec_0.50: 0.7343, door_rec_0.50: 0.4111, window_rec_0.50: 0.2730, bookshelf_rec_0.50: 0.7532, picture_rec_0.50: 0.0135, counter_rec_0.50: 0.2115, desk_rec_0.50: 0.8189, curtain_rec_0.50: 0.4776, refrigerator_rec_0.50: 0.7544, showercurtrain_rec_0.50: 0.4286, toilet_rec_0.50: 0.8966, sink_rec_0.50: 0.3776, bathtub_rec_0.50: 0.7742, garbagebin_rec_0.50: 0.4943, mAR_0.50: 0.5767
+2021-10-08 15:16:50,553 - mmdet - INFO - Epoch [2][50/751]	lr: 1.000e-03, eta: 0:57:28, time: 0.461, data_time: 0.060, memory: 1546, loss_centerness: 0.6291, loss_bbox: 0.4338, loss_cls: 0.2925, loss: 1.3554, grad_norm: 1.1834
+2021-10-08 15:17:11,717 - mmdet - INFO - Epoch [2][100/751]	lr: 1.000e-03, eta: 0:57:08, time: 0.423, data_time: 0.011, memory: 1546, loss_centerness: 0.6257, loss_bbox: 0.4301, loss_cls: 0.2937, loss: 1.3496, grad_norm: 1.1946
+2021-10-08 15:17:32,234 - mmdet - INFO - Epoch [2][150/751]	lr: 1.000e-03, eta: 0:56:43, time: 0.410, data_time: 0.010, memory: 1546, loss_centerness: 0.6265, loss_bbox: 0.4285, loss_cls: 0.2902, loss: 1.3452, grad_norm: 1.1663
+2021-10-08 15:17:53,199 - mmdet - INFO - Epoch [2][200/751]	lr: 1.000e-03, eta: 0:56:22, time: 0.419, data_time: 0.011, memory: 1546, loss_centerness: 0.6285, loss_bbox: 0.4197, loss_cls: 0.2832, loss: 1.3315, grad_norm: 1.1180
+2021-10-08 15:18:14,259 - mmdet - INFO - Epoch [2][250/751]	lr: 1.000e-03, eta: 0:56:01, time: 0.421, data_time: 0.012, memory: 1634, loss_centerness: 0.6264, loss_bbox: 0.4189, loss_cls: 0.2833, loss: 1.3287, grad_norm: 1.1204
+2021-10-08 15:18:35,973 - mmdet - INFO - Epoch [2][300/751]	lr: 1.000e-03, eta: 0:55:46, time: 0.434, data_time: 0.011, memory: 1634, loss_centerness: 0.6289, loss_bbox: 0.4147, loss_cls: 0.2780, loss: 1.3216, grad_norm: 1.1995
+2021-10-08 15:18:57,354 - mmdet - INFO - Epoch [2][350/751]	lr: 1.000e-03, eta: 0:55:28, time: 0.428, data_time: 0.011, memory: 1634, loss_centerness: 0.6270, loss_bbox: 0.4152, loss_cls: 0.2790, loss: 1.3213, grad_norm: 1.1531
+2021-10-08 15:19:18,711 - mmdet - INFO - Epoch [2][400/751]	lr: 1.000e-03, eta: 0:55:09, time: 0.427, data_time: 0.012, memory: 1634, loss_centerness: 0.6256, loss_bbox: 0.4173, loss_cls: 0.2809, loss: 1.3238, grad_norm: 1.1819
+2021-10-08 15:19:40,250 - mmdet - INFO - Epoch [2][450/751]	lr: 1.000e-03, eta: 0:54:51, time: 0.431, data_time: 0.011, memory: 1634, loss_centerness: 0.6241, loss_bbox: 0.4080, loss_cls: 0.2704, loss: 1.3026, grad_norm: 1.1022
+2021-10-08 15:20:01,760 - mmdet - INFO - Epoch [2][500/751]	lr: 1.000e-03, eta: 0:54:33, time: 0.430, data_time: 0.012, memory: 1634, loss_centerness: 0.6272, loss_bbox: 0.4104, loss_cls: 0.2716, loss: 1.3092, grad_norm: 1.2503
+2021-10-08 15:20:23,153 - mmdet - INFO - Epoch [2][550/751]	lr: 1.000e-03, eta: 0:54:13, time: 0.428, data_time: 0.011, memory: 1634, loss_centerness: 0.6242, loss_bbox: 0.4056, loss_cls: 0.2677, loss: 1.2975, grad_norm: 1.1188
+2021-10-08 15:20:44,272 - mmdet - INFO - Epoch [2][600/751]	lr: 1.000e-03, eta: 0:53:52, time: 0.422, data_time: 0.011, memory: 1634, loss_centerness: 0.6231, loss_bbox: 0.4041, loss_cls: 0.2656, loss: 1.2928, grad_norm: 1.0749
+2021-10-08 15:21:06,116 - mmdet - INFO - Epoch [2][650/751]	lr: 1.000e-03, eta: 0:53:35, time: 0.437, data_time: 0.012, memory: 1634, loss_centerness: 0.6249, loss_bbox: 0.3990, loss_cls: 0.2616, loss: 1.2855, grad_norm: 1.0930
+2021-10-08 15:21:27,720 - mmdet - INFO - Epoch [2][700/751]	lr: 1.000e-03, eta: 0:53:17, time: 0.432, data_time: 0.011, memory: 1634, loss_centerness: 0.6246, loss_bbox: 0.3954, loss_cls: 0.2597, loss: 1.2796, grad_norm: 1.0697
+2021-10-08 15:21:48,449 - mmdet - INFO - Epoch [2][750/751]	lr: 1.000e-03, eta: 0:52:53, time: 0.415, data_time: 0.011, memory: 1634, loss_centerness: 0.6228, loss_bbox: 0.3969, loss_cls: 0.2573, loss: 1.2770, grad_norm: 1.1805
+2021-10-08 15:21:49,046 - mmdet - INFO - Saving checkpoint at 2 epochs
+2021-10-08 15:22:11,934 - mmdet - INFO - 
++----------------+---------+---------+---------+---------+
+| classes        | AP_0.25 | AR_0.25 | AP_0.50 | AR_0.50 |
++----------------+---------+---------+---------+---------+
+| cabinet        | 0.3493  | 0.8548  | 0.1442  | 0.5027  |
+| bed            | 0.8560  | 0.9506  | 0.7905  | 0.8889  |
+| chair          | 0.9139  | 0.9525  | 0.7747  | 0.8282  |
+| sofa           | 0.8146  | 0.9897  | 0.6197  | 0.9485  |
+| table          | 0.5727  | 0.8686  | 0.4778  | 0.7400  |
+| door           | 0.4192  | 0.8351  | 0.1982  | 0.4732  |
+| window         | 0.3150  | 0.8121  | 0.0790  | 0.4184  |
+| bookshelf      | 0.5001  | 0.9481  | 0.3294  | 0.8701  |
+| picture        | 0.0095  | 0.1667  | 0.0010  | 0.0270  |
+| counter        | 0.2551  | 0.7500  | 0.0234  | 0.2115  |
+| desk           | 0.5976  | 0.9528  | 0.3777  | 0.8268  |
+| curtain        | 0.4685  | 0.9403  | 0.2721  | 0.6269  |
+| refrigerator   | 0.3190  | 0.9825  | 0.2534  | 0.7368  |
+| showercurtrain | 0.6085  | 0.9286  | 0.0667  | 0.3929  |
+| toilet         | 0.9923  | 1.0000  | 0.7519  | 0.7931  |
+| sink           | 0.5572  | 0.6837  | 0.2317  | 0.3571  |
+| bathtub        | 0.8928  | 0.9677  | 0.6493  | 0.7419  |
+| garbagebin     | 0.3974  | 0.8377  | 0.2300  | 0.5642  |
++----------------+---------+---------+---------+---------+
+| Overall        | 0.5466  | 0.8567  | 0.3484  | 0.6082  |
++----------------+---------+---------+---------+---------+
+2021-10-08 15:22:12,144 - mmdet - INFO - Exp name: fcaf3d_scannet-3d-18class.py
+2021-10-08 15:22:12,144 - mmdet - INFO - Epoch(val) [2][156]	cabinet_AP_0.25: 0.3493, bed_AP_0.25: 0.8560, chair_AP_0.25: 0.9139, sofa_AP_0.25: 0.8146, table_AP_0.25: 0.5727, door_AP_0.25: 0.4192, window_AP_0.25: 0.3150, bookshelf_AP_0.25: 0.5001, picture_AP_0.25: 0.0095, counter_AP_0.25: 0.2551, desk_AP_0.25: 0.5976, curtain_AP_0.25: 0.4685, refrigerator_AP_0.25: 0.3190, showercurtrain_AP_0.25: 0.6085, toilet_AP_0.25: 0.9923, sink_AP_0.25: 0.5572, bathtub_AP_0.25: 0.8928, garbagebin_AP_0.25: 0.3974, mAP_0.25: 0.5466, cabinet_rec_0.25: 0.8548, bed_rec_0.25: 0.9506, chair_rec_0.25: 0.9525, sofa_rec_0.25: 0.9897, table_rec_0.25: 0.8686, door_rec_0.25: 0.8351, window_rec_0.25: 0.8121, bookshelf_rec_0.25: 0.9481, picture_rec_0.25: 0.1667, counter_rec_0.25: 0.7500, desk_rec_0.25: 0.9528, curtain_rec_0.25: 0.9403, refrigerator_rec_0.25: 0.9825, showercurtrain_rec_0.25: 0.9286, toilet_rec_0.25: 1.0000, sink_rec_0.25: 0.6837, bathtub_rec_0.25: 0.9677, garbagebin_rec_0.25: 0.8377, mAR_0.25: 0.8567, cabinet_AP_0.50: 0.1442, bed_AP_0.50: 0.7905, chair_AP_0.50: 0.7747, sofa_AP_0.50: 0.6197, table_AP_0.50: 0.4778, door_AP_0.50: 0.1982, window_AP_0.50: 0.0790, bookshelf_AP_0.50: 0.3294, picture_AP_0.50: 0.0010, counter_AP_0.50: 0.0234, desk_AP_0.50: 0.3777, curtain_AP_0.50: 0.2721, refrigerator_AP_0.50: 0.2534, showercurtrain_AP_0.50: 0.0667, toilet_AP_0.50: 0.7519, sink_AP_0.50: 0.2317, bathtub_AP_0.50: 0.6493, garbagebin_AP_0.50: 0.2300, mAP_0.50: 0.3484, cabinet_rec_0.50: 0.5027, bed_rec_0.50: 0.8889, chair_rec_0.50: 0.8282, sofa_rec_0.50: 0.9485, table_rec_0.50: 0.7400, door_rec_0.50: 0.4732, window_rec_0.50: 0.4184, bookshelf_rec_0.50: 0.8701, picture_rec_0.50: 0.0270, counter_rec_0.50: 0.2115, desk_rec_0.50: 0.8268, curtain_rec_0.50: 0.6269, refrigerator_rec_0.50: 0.7368, showercurtrain_rec_0.50: 0.3929, toilet_rec_0.50: 0.7931, sink_rec_0.50: 0.3571, bathtub_rec_0.50: 0.7419, garbagebin_rec_0.50: 0.5642, mAR_0.50: 0.6082
+2021-10-08 15:22:34,858 - mmdet - INFO - Epoch [3][50/751]	lr: 1.000e-03, eta: 0:52:37, time: 0.454, data_time: 0.060, memory: 1634, loss_centerness: 0.6236, loss_bbox: 0.3923, loss_cls: 0.2529, loss: 1.2688, grad_norm: 1.0404
+2021-10-08 15:22:56,149 - mmdet - INFO - Epoch [3][100/751]	lr: 1.000e-03, eta: 0:52:17, time: 0.426, data_time: 0.011, memory: 1634, loss_centerness: 0.6257, loss_bbox: 0.3854, loss_cls: 0.2534, loss: 1.2645, grad_norm: 1.1860
+2021-10-08 15:23:17,589 - mmdet - INFO - Epoch [3][150/751]	lr: 1.000e-03, eta: 0:51:57, time: 0.429, data_time: 0.011, memory: 1634, loss_centerness: 0.6237, loss_bbox: 0.3863, loss_cls: 0.2526, loss: 1.2626, grad_norm: 1.1395
+2021-10-08 15:23:38,969 - mmdet - INFO - Epoch [3][200/751]	lr: 1.000e-03, eta: 0:51:37, time: 0.428, data_time: 0.011, memory: 1634, loss_centerness: 0.6231, loss_bbox: 0.3916, loss_cls: 0.2524, loss: 1.2670, grad_norm: 1.1456
+2021-10-08 15:24:00,178 - mmdet - INFO - Epoch [3][250/751]	lr: 1.000e-03, eta: 0:51:15, time: 0.424, data_time: 0.011, memory: 1634, loss_centerness: 0.6250, loss_bbox: 0.3813, loss_cls: 0.2472, loss: 1.2534, grad_norm: 1.1171
+2021-10-08 15:24:21,303 - mmdet - INFO - Epoch [3][300/751]	lr: 1.000e-03, eta: 0:50:54, time: 0.423, data_time: 0.011, memory: 1634, loss_centerness: 0.6223, loss_bbox: 0.3856, loss_cls: 0.2456, loss: 1.2535, grad_norm: 1.1072
+2021-10-08 15:24:42,113 - mmdet - INFO - Epoch [3][350/751]	lr: 1.000e-03, eta: 0:50:31, time: 0.416, data_time: 0.011, memory: 1634, loss_centerness: 0.6228, loss_bbox: 0.3826, loss_cls: 0.2453, loss: 1.2507, grad_norm: 1.0964
+2021-10-08 15:25:03,643 - mmdet - INFO - Epoch [3][400/751]	lr: 1.000e-03, eta: 0:50:12, time: 0.431, data_time: 0.011, memory: 1634, loss_centerness: 0.6237, loss_bbox: 0.3742, loss_cls: 0.2401, loss: 1.2381, grad_norm: 1.1092
+2021-10-08 15:25:24,939 - mmdet - INFO - Epoch [3][450/751]	lr: 1.000e-03, eta: 0:49:51, time: 0.426, data_time: 0.011, memory: 1634, loss_centerness: 0.6233, loss_bbox: 0.3774, loss_cls: 0.2389, loss: 1.2396, grad_norm: 1.1684
+2021-10-08 15:25:46,530 - mmdet - INFO - Epoch [3][500/751]	lr: 1.000e-03, eta: 0:49:31, time: 0.432, data_time: 0.012, memory: 1634, loss_centerness: 0.6217, loss_bbox: 0.3765, loss_cls: 0.2387, loss: 1.2370, grad_norm: 1.2038
+2021-10-08 15:26:08,050 - mmdet - INFO - Epoch [3][550/751]	lr: 1.000e-03, eta: 0:49:11, time: 0.430, data_time: 0.011, memory: 1645, loss_centerness: 0.6212, loss_bbox: 0.3764, loss_cls: 0.2390, loss: 1.2366, grad_norm: 1.0756
+2021-10-08 15:26:30,399 - mmdet - INFO - Epoch [3][600/751]	lr: 1.000e-03, eta: 0:48:54, time: 0.447, data_time: 0.011, memory: 1645, loss_centerness: 0.6209, loss_bbox: 0.3765, loss_cls: 0.2389, loss: 1.2363, grad_norm: 1.0641
+2021-10-08 15:26:51,784 - mmdet - INFO - Epoch [3][650/751]	lr: 1.000e-03, eta: 0:48:33, time: 0.428, data_time: 0.011, memory: 1645, loss_centerness: 0.6186, loss_bbox: 0.3720, loss_cls: 0.2328, loss: 1.2235, grad_norm: 0.9717
+2021-10-08 15:27:13,306 - mmdet - INFO - Epoch [3][700/751]	lr: 1.000e-03, eta: 0:48:12, time: 0.431, data_time: 0.012, memory: 1645, loss_centerness: 0.6215, loss_bbox: 0.3675, loss_cls: 0.2258, loss: 1.2148, grad_norm: 1.0704
+2021-10-08 15:27:34,678 - mmdet - INFO - Epoch [3][750/751]	lr: 1.000e-03, eta: 0:47:52, time: 0.427, data_time: 0.011, memory: 1645, loss_centerness: 0.6217, loss_bbox: 0.3729, loss_cls: 0.2362, loss: 1.2308, grad_norm: 1.0121
+2021-10-08 15:27:35,135 - mmdet - INFO - Saving checkpoint at 3 epochs
+2021-10-08 15:27:55,711 - mmdet - INFO - 
++----------------+---------+---------+---------+---------+
+| classes        | AP_0.25 | AR_0.25 | AP_0.50 | AR_0.50 |
++----------------+---------+---------+---------+---------+
+| cabinet        | 0.4006  | 0.8548  | 0.1538  | 0.5081  |
+| bed            | 0.8481  | 0.9506  | 0.7566  | 0.8765  |
+| chair          | 0.9181  | 0.9547  | 0.8145  | 0.8604  |
+| sofa           | 0.8386  | 0.9794  | 0.6534  | 0.9175  |
+| table          | 0.6149  | 0.8743  | 0.5315  | 0.7543  |
+| door           | 0.4484  | 0.8544  | 0.2303  | 0.5032  |
+| window         | 0.3889  | 0.8298  | 0.0976  | 0.4149  |
+| bookshelf      | 0.4809  | 0.9481  | 0.3661  | 0.8052  |
+| picture        | 0.0150  | 0.1486  | 0.0041  | 0.0270  |
+| counter        | 0.3770  | 0.8269  | 0.0365  | 0.3077  |
+| desk           | 0.6045  | 0.9449  | 0.3833  | 0.8268  |
+| curtain        | 0.5189  | 0.9254  | 0.2337  | 0.4925  |
+| refrigerator   | 0.3416  | 0.9649  | 0.2741  | 0.7719  |
+| showercurtrain | 0.6802  | 0.9643  | 0.0399  | 0.2857  |
+| toilet         | 0.9988  | 1.0000  | 0.8013  | 0.8448  |
+| sink           | 0.5075  | 0.6735  | 0.2301  | 0.3265  |
+| bathtub        | 0.9025  | 0.9677  | 0.8048  | 0.8710  |
+| garbagebin     | 0.3801  | 0.8415  | 0.2326  | 0.5509  |
++----------------+---------+---------+---------+---------+
+| Overall        | 0.5703  | 0.8613  | 0.3691  | 0.6081  |
++----------------+---------+---------+---------+---------+
+2021-10-08 15:27:55,886 - mmdet - INFO - Exp name: fcaf3d_scannet-3d-18class.py
+2021-10-08 15:27:55,887 - mmdet - INFO - Epoch(val) [3][156]	cabinet_AP_0.25: 0.4006, bed_AP_0.25: 0.8481, chair_AP_0.25: 0.9181, sofa_AP_0.25: 0.8386, table_AP_0.25: 0.6149, door_AP_0.25: 0.4484, window_AP_0.25: 0.3889, bookshelf_AP_0.25: 0.4809, picture_AP_0.25: 0.0150, counter_AP_0.25: 0.3770, desk_AP_0.25: 0.6045, curtain_AP_0.25: 0.5189, refrigerator_AP_0.25: 0.3416, showercurtrain_AP_0.25: 0.6802, toilet_AP_0.25: 0.9988, sink_AP_0.25: 0.5075, bathtub_AP_0.25: 0.9025, garbagebin_AP_0.25: 0.3801, mAP_0.25: 0.5703, cabinet_rec_0.25: 0.8548, bed_rec_0.25: 0.9506, chair_rec_0.25: 0.9547, sofa_rec_0.25: 0.9794, table_rec_0.25: 0.8743, door_rec_0.25: 0.8544, window_rec_0.25: 0.8298, bookshelf_rec_0.25: 0.9481, picture_rec_0.25: 0.1486, counter_rec_0.25: 0.8269, desk_rec_0.25: 0.9449, curtain_rec_0.25: 0.9254, refrigerator_rec_0.25: 0.9649, showercurtrain_rec_0.25: 0.9643, toilet_rec_0.25: 1.0000, sink_rec_0.25: 0.6735, bathtub_rec_0.25: 0.9677, garbagebin_rec_0.25: 0.8415, mAR_0.25: 0.8613, cabinet_AP_0.50: 0.1538, bed_AP_0.50: 0.7566, chair_AP_0.50: 0.8145, sofa_AP_0.50: 0.6534, table_AP_0.50: 0.5315, door_AP_0.50: 0.2303, window_AP_0.50: 0.0976, bookshelf_AP_0.50: 0.3661, picture_AP_0.50: 0.0041, counter_AP_0.50: 0.0365, desk_AP_0.50: 0.3833, curtain_AP_0.50: 0.2337, refrigerator_AP_0.50: 0.2741, showercurtrain_AP_0.50: 0.0399, toilet_AP_0.50: 0.8013, sink_AP_0.50: 0.2301, bathtub_AP_0.50: 0.8048, garbagebin_AP_0.50: 0.2326, mAP_0.50: 0.3691, cabinet_rec_0.50: 0.5081, bed_rec_0.50: 0.8765, chair_rec_0.50: 0.8604, sofa_rec_0.50: 0.9175, table_rec_0.50: 0.7543, door_rec_0.50: 0.5032, window_rec_0.50: 0.4149, bookshelf_rec_0.50: 0.8052, picture_rec_0.50: 0.0270, counter_rec_0.50: 0.3077, desk_rec_0.50: 0.8268, curtain_rec_0.50: 0.4925, refrigerator_rec_0.50: 0.7719, showercurtrain_rec_0.50: 0.2857, toilet_rec_0.50: 0.8448, sink_rec_0.50: 0.3265, bathtub_rec_0.50: 0.8710, garbagebin_rec_0.50: 0.5509, mAR_0.50: 0.6081
+2021-10-08 15:28:19,045 - mmdet - INFO - Epoch [4][50/751]	lr: 1.000e-03, eta: 0:47:34, time: 0.463, data_time: 0.060, memory: 1645, loss_centerness: 0.6216, loss_bbox: 0.3669, loss_cls: 0.2276, loss: 1.2161, grad_norm: 1.0920
+2021-10-08 15:28:40,092 - mmdet - INFO - Epoch [4][100/751]	lr: 1.000e-03, eta: 0:47:12, time: 0.421, data_time: 0.010, memory: 1645, loss_centerness: 0.6201, loss_bbox: 0.3694, loss_cls: 0.2284, loss: 1.2180, grad_norm: 1.0543
+2021-10-08 15:29:00,972 - mmdet - INFO - Epoch [4][150/751]	lr: 1.000e-03, eta: 0:46:50, time: 0.417, data_time: 0.011, memory: 1645, loss_centerness: 0.6210, loss_bbox: 0.3639, loss_cls: 0.2231, loss: 1.2080, grad_norm: 1.0878
+2021-10-08 15:29:21,623 - mmdet - INFO - Epoch [4][200/751]	lr: 1.000e-03, eta: 0:46:27, time: 0.413, data_time: 0.011, memory: 1645, loss_centerness: 0.6220, loss_bbox: 0.3662, loss_cls: 0.2245, loss: 1.2127, grad_norm: 1.1045
+2021-10-08 15:29:43,649 - mmdet - INFO - Epoch [4][250/751]	lr: 1.000e-03, eta: 0:46:08, time: 0.441, data_time: 0.011, memory: 1645, loss_centerness: 0.6199, loss_bbox: 0.3656, loss_cls: 0.2279, loss: 1.2134, grad_norm: 0.9348
+2021-10-08 15:30:04,952 - mmdet - INFO - Epoch [4][300/751]	lr: 1.000e-03, eta: 0:45:47, time: 0.426, data_time: 0.011, memory: 1645, loss_centerness: 0.6196, loss_bbox: 0.3620, loss_cls: 0.2222, loss: 1.2037, grad_norm: 1.1011
+2021-10-08 15:30:26,187 - mmdet - INFO - Epoch [4][350/751]	lr: 1.000e-03, eta: 0:45:25, time: 0.425, data_time: 0.011, memory: 1645, loss_centerness: 0.6204, loss_bbox: 0.3588, loss_cls: 0.2200, loss: 1.1991, grad_norm: 1.1490
+2021-10-08 15:30:47,753 - mmdet - INFO - Epoch [4][400/751]	lr: 1.000e-03, eta: 0:45:05, time: 0.431, data_time: 0.012, memory: 1645, loss_centerness: 0.6207, loss_bbox: 0.3603, loss_cls: 0.2244, loss: 1.2054, grad_norm: 1.1443
+2021-10-08 15:31:09,201 - mmdet - INFO - Epoch [4][450/751]	lr: 1.000e-03, eta: 0:44:44, time: 0.429, data_time: 0.011, memory: 1645, loss_centerness: 0.6207, loss_bbox: 0.3571, loss_cls: 0.2154, loss: 1.1932, grad_norm: 1.1269
+2021-10-08 15:31:30,793 - mmdet - INFO - Epoch [4][500/751]	lr: 1.000e-03, eta: 0:44:23, time: 0.432, data_time: 0.011, memory: 1645, loss_centerness: 0.6203, loss_bbox: 0.3611, loss_cls: 0.2198, loss: 1.2012, grad_norm: 1.1043
+2021-10-08 15:31:52,982 - mmdet - INFO - Epoch [4][550/751]	lr: 1.000e-03, eta: 0:44:04, time: 0.444, data_time: 0.011, memory: 1645, loss_centerness: 0.6198, loss_bbox: 0.3563, loss_cls: 0.2186, loss: 1.1947, grad_norm: 0.9750
+2021-10-08 15:32:14,569 - mmdet - INFO - Epoch [4][600/751]	lr: 1.000e-03, eta: 0:43:43, time: 0.432, data_time: 0.011, memory: 1645, loss_centerness: 0.6232, loss_bbox: 0.3563, loss_cls: 0.2173, loss: 1.1968, grad_norm: 1.2304
+2021-10-08 15:32:35,929 - mmdet - INFO - Epoch [4][650/751]	lr: 1.000e-03, eta: 0:43:22, time: 0.427, data_time: 0.012, memory: 1645, loss_centerness: 0.6196, loss_bbox: 0.3565, loss_cls: 0.2191, loss: 1.1952, grad_norm: 1.0155
+2021-10-08 15:32:57,494 - mmdet - INFO - Epoch [4][700/751]	lr: 1.000e-03, eta: 0:43:01, time: 0.431, data_time: 0.012, memory: 1645, loss_centerness: 0.6188, loss_bbox: 0.3592, loss_cls: 0.2146, loss: 1.1926, grad_norm: 1.2756
+2021-10-08 15:33:19,301 - mmdet - INFO - Epoch [4][750/751]	lr: 1.000e-03, eta: 0:42:41, time: 0.436, data_time: 0.012, memory: 1645, loss_centerness: 0.6207, loss_bbox: 0.3525, loss_cls: 0.2155, loss: 1.1887, grad_norm: 1.0997
+2021-10-08 15:33:19,813 - mmdet - INFO - Saving checkpoint at 4 epochs
+2021-10-08 15:33:38,186 - mmdet - INFO - 
++----------------+---------+---------+---------+---------+
+| classes        | AP_0.25 | AR_0.25 | AP_0.50 | AR_0.50 |
++----------------+---------+---------+---------+---------+
+| cabinet        | 0.3885  | 0.8629  | 0.1671  | 0.5403  |
+| bed            | 0.8649  | 0.9506  | 0.7819  | 0.8519  |
+| chair          | 0.9225  | 0.9547  | 0.8113  | 0.8575  |
+| sofa           | 0.8673  | 0.9794  | 0.7476  | 0.9485  |
+| table          | 0.6260  | 0.8543  | 0.5401  | 0.7543  |
+| door           | 0.4951  | 0.8480  | 0.2677  | 0.5353  |
+| window         | 0.4165  | 0.8262  | 0.1298  | 0.4468  |
+| bookshelf      | 0.5894  | 0.9481  | 0.4926  | 0.9091  |
+| picture        | 0.0216  | 0.1667  | 0.0089  | 0.0450  |
+| counter        | 0.3128  | 0.8269  | 0.0591  | 0.2885  |
+| desk           | 0.6507  | 0.9606  | 0.4099  | 0.8425  |
+| curtain        | 0.5354  | 0.9104  | 0.2648  | 0.6269  |
+| refrigerator   | 0.4153  | 0.9649  | 0.3748  | 0.8596  |
+| showercurtrain | 0.6341  | 0.9286  | 0.0865  | 0.3571  |
+| toilet         | 0.9961  | 1.0000  | 0.8837  | 0.9138  |
+| sink           | 0.6047  | 0.7347  | 0.3452  | 0.4796  |
+| bathtub        | 0.8940  | 0.9677  | 0.6735  | 0.7419  |
+| garbagebin     | 0.4412  | 0.8453  | 0.2777  | 0.5547  |
++----------------+---------+---------+---------+---------+
+| Overall        | 0.5931  | 0.8628  | 0.4068  | 0.6419  |
++----------------+---------+---------+---------+---------+
+2021-10-08 15:33:38,341 - mmdet - INFO - Exp name: fcaf3d_scannet-3d-18class.py
+2021-10-08 15:33:38,341 - mmdet - INFO - Epoch(val) [4][156]	cabinet_AP_0.25: 0.3885, bed_AP_0.25: 0.8649, chair_AP_0.25: 0.9225, sofa_AP_0.25: 0.8673, table_AP_0.25: 0.6260, door_AP_0.25: 0.4951, window_AP_0.25: 0.4165, bookshelf_AP_0.25: 0.5894, picture_AP_0.25: 0.0216, counter_AP_0.25: 0.3128, desk_AP_0.25: 0.6507, curtain_AP_0.25: 0.5354, refrigerator_AP_0.25: 0.4153, showercurtrain_AP_0.25: 0.6341, toilet_AP_0.25: 0.9961, sink_AP_0.25: 0.6047, bathtub_AP_0.25: 0.8940, garbagebin_AP_0.25: 0.4412, mAP_0.25: 0.5931, cabinet_rec_0.25: 0.8629, bed_rec_0.25: 0.9506, chair_rec_0.25: 0.9547, sofa_rec_0.25: 0.9794, table_rec_0.25: 0.8543, door_rec_0.25: 0.8480, window_rec_0.25: 0.8262, bookshelf_rec_0.25: 0.9481, picture_rec_0.25: 0.1667, counter_rec_0.25: 0.8269, desk_rec_0.25: 0.9606, curtain_rec_0.25: 0.9104, refrigerator_rec_0.25: 0.9649, showercurtrain_rec_0.25: 0.9286, toilet_rec_0.25: 1.0000, sink_rec_0.25: 0.7347, bathtub_rec_0.25: 0.9677, garbagebin_rec_0.25: 0.8453, mAR_0.25: 0.8628, cabinet_AP_0.50: 0.1671, bed_AP_0.50: 0.7819, chair_AP_0.50: 0.8113, sofa_AP_0.50: 0.7476, table_AP_0.50: 0.5401, door_AP_0.50: 0.2677, window_AP_0.50: 0.1298, bookshelf_AP_0.50: 0.4926, picture_AP_0.50: 0.0089, counter_AP_0.50: 0.0591, desk_AP_0.50: 0.4099, curtain_AP_0.50: 0.2648, refrigerator_AP_0.50: 0.3748, showercurtrain_AP_0.50: 0.0865, toilet_AP_0.50: 0.8837, sink_AP_0.50: 0.3452, bathtub_AP_0.50: 0.6735, garbagebin_AP_0.50: 0.2777, mAP_0.50: 0.4068, cabinet_rec_0.50: 0.5403, bed_rec_0.50: 0.8519, chair_rec_0.50: 0.8575, sofa_rec_0.50: 0.9485, table_rec_0.50: 0.7543, door_rec_0.50: 0.5353, window_rec_0.50: 0.4468, bookshelf_rec_0.50: 0.9091, picture_rec_0.50: 0.0450, counter_rec_0.50: 0.2885, desk_rec_0.50: 0.8425, curtain_rec_0.50: 0.6269, refrigerator_rec_0.50: 0.8596, showercurtrain_rec_0.50: 0.3571, toilet_rec_0.50: 0.9138, sink_rec_0.50: 0.4796, bathtub_rec_0.50: 0.7419, garbagebin_rec_0.50: 0.5547, mAR_0.50: 0.6419
+2021-10-08 15:34:01,235 - mmdet - INFO - Epoch [5][50/751]	lr: 1.000e-03, eta: 0:42:22, time: 0.458, data_time: 0.061, memory: 1645, loss_centerness: 0.6202, loss_bbox: 0.3535, loss_cls: 0.2138, loss: 1.1876, grad_norm: 1.0432
+2021-10-08 15:34:22,463 - mmdet - INFO - Epoch [5][100/751]	lr: 1.000e-03, eta: 0:42:00, time: 0.425, data_time: 0.010, memory: 1645, loss_centerness: 0.6205, loss_bbox: 0.3484, loss_cls: 0.2073, loss: 1.1762, grad_norm: 1.1235
+2021-10-08 15:34:43,255 - mmdet - INFO - Epoch [5][150/751]	lr: 1.000e-03, eta: 0:41:38, time: 0.416, data_time: 0.011, memory: 1645, loss_centerness: 0.6206, loss_bbox: 0.3478, loss_cls: 0.2078, loss: 1.1762, grad_norm: 1.0542
+2021-10-08 15:35:04,527 - mmdet - INFO - Epoch [5][200/751]	lr: 1.000e-03, eta: 0:41:16, time: 0.425, data_time: 0.011, memory: 1645, loss_centerness: 0.6200, loss_bbox: 0.3538, loss_cls: 0.2105, loss: 1.1843, grad_norm: 1.2535
+2021-10-08 15:35:25,626 - mmdet - INFO - Epoch [5][250/751]	lr: 1.000e-03, eta: 0:40:55, time: 0.422, data_time: 0.012, memory: 1645, loss_centerness: 0.6205, loss_bbox: 0.3500, loss_cls: 0.2088, loss: 1.1793, grad_norm: 1.0431
+2021-10-08 15:35:47,005 - mmdet - INFO - Epoch [5][300/751]	lr: 1.000e-03, eta: 0:40:33, time: 0.427, data_time: 0.011, memory: 1645, loss_centerness: 0.6187, loss_bbox: 0.3498, loss_cls: 0.2081, loss: 1.1765, grad_norm: 1.0667
+2021-10-08 15:36:08,852 - mmdet - INFO - Epoch [5][350/751]	lr: 1.000e-03, eta: 0:40:13, time: 0.437, data_time: 0.011, memory: 1645, loss_centerness: 0.6178, loss_bbox: 0.3408, loss_cls: 0.2033, loss: 1.1620, grad_norm: 0.9567
+2021-10-08 15:36:31,009 - mmdet - INFO - Epoch [5][400/751]	lr: 1.000e-03, eta: 0:39:53, time: 0.443, data_time: 0.011, memory: 1645, loss_centerness: 0.6197, loss_bbox: 0.3462, loss_cls: 0.2068, loss: 1.1727, grad_norm: 0.9216
+2021-10-08 15:36:52,697 - mmdet - INFO - Epoch [5][450/751]	lr: 1.000e-03, eta: 0:39:32, time: 0.434, data_time: 0.011, memory: 1645, loss_centerness: 0.6191, loss_bbox: 0.3437, loss_cls: 0.2028, loss: 1.1656, grad_norm: 0.9706
+2021-10-08 15:37:14,361 - mmdet - INFO - Epoch [5][500/751]	lr: 1.000e-03, eta: 0:39:11, time: 0.433, data_time: 0.011, memory: 1645, loss_centerness: 0.6188, loss_bbox: 0.3432, loss_cls: 0.2002, loss: 1.1622, grad_norm: 1.1807
+2021-10-08 15:37:35,853 - mmdet - INFO - Epoch [5][550/751]	lr: 1.000e-03, eta: 0:38:50, time: 0.430, data_time: 0.012, memory: 1645, loss_centerness: 0.6173, loss_bbox: 0.3444, loss_cls: 0.2049, loss: 1.1666, grad_norm: 1.1029
+2021-10-08 15:37:56,834 - mmdet - INFO - Epoch [5][600/751]	lr: 1.000e-03, eta: 0:38:28, time: 0.420, data_time: 0.011, memory: 1645, loss_centerness: 0.6148, loss_bbox: 0.3474, loss_cls: 0.2041, loss: 1.1663, grad_norm: 0.9882
+2021-10-08 15:38:18,953 - mmdet - INFO - Epoch [5][650/751]	lr: 1.000e-03, eta: 0:38:08, time: 0.442, data_time: 0.011, memory: 1645, loss_centerness: 0.6202, loss_bbox: 0.3365, loss_cls: 0.1975, loss: 1.1543, grad_norm: 1.0455
+2021-10-08 15:38:40,814 - mmdet - INFO - Epoch [5][700/751]	lr: 1.000e-03, eta: 0:37:47, time: 0.437, data_time: 0.011, memory: 1645, loss_centerness: 0.6191, loss_bbox: 0.3421, loss_cls: 0.2000, loss: 1.1612, grad_norm: 1.1298
+2021-10-08 15:39:02,394 - mmdet - INFO - Epoch [5][750/751]	lr: 1.000e-03, eta: 0:37:26, time: 0.431, data_time: 0.011, memory: 1645, loss_centerness: 0.6188, loss_bbox: 0.3367, loss_cls: 0.1993, loss: 1.1548, grad_norm: 1.0595
+2021-10-08 15:39:02,844 - mmdet - INFO - Saving checkpoint at 5 epochs
+2021-10-08 15:39:20,883 - mmdet - INFO - 
++----------------+---------+---------+---------+---------+
+| classes        | AP_0.25 | AR_0.25 | AP_0.50 | AR_0.50 |
++----------------+---------+---------+---------+---------+
+| cabinet        | 0.4279  | 0.8898  | 0.1890  | 0.6022  |
+| bed            | 0.8475  | 0.9383  | 0.7873  | 0.8642  |
+| chair          | 0.9222  | 0.9576  | 0.8258  | 0.8640  |
+| sofa           | 0.8389  | 0.9794  | 0.7098  | 0.9175  |
+| table          | 0.6379  | 0.8571  | 0.5642  | 0.7714  |
+| door           | 0.5258  | 0.8565  | 0.2898  | 0.5289  |
+| window         | 0.4607  | 0.8511  | 0.1712  | 0.4752  |
+| bookshelf      | 0.6158  | 0.9481  | 0.4836  | 0.8961  |
+| picture        | 0.0267  | 0.1937  | 0.0071  | 0.0631  |
+| counter        | 0.3786  | 0.8462  | 0.1008  | 0.3269  |
+| desk           | 0.6611  | 0.9606  | 0.4330  | 0.8661  |
+| curtain        | 0.4641  | 0.9104  | 0.3007  | 0.6418  |
+| refrigerator   | 0.3623  | 0.8947  | 0.3328  | 0.8421  |
+| showercurtrain | 0.6162  | 0.9643  | 0.0889  | 0.3571  |
+| toilet         | 1.0000  | 1.0000  | 0.9215  | 0.9310  |
+| sink           | 0.6076  | 0.7347  | 0.3686  | 0.4898  |
+| bathtub        | 0.8897  | 0.9677  | 0.7723  | 0.8065  |
+| garbagebin     | 0.4481  | 0.8604  | 0.3195  | 0.6208  |
++----------------+---------+---------+---------+---------+
+| Overall        | 0.5962  | 0.8673  | 0.4259  | 0.6592  |
++----------------+---------+---------+---------+---------+
+2021-10-08 15:39:21,030 - mmdet - INFO - Exp name: fcaf3d_scannet-3d-18class.py
+2021-10-08 15:39:21,030 - mmdet - INFO - Epoch(val) [5][156]	cabinet_AP_0.25: 0.4279, bed_AP_0.25: 0.8475, chair_AP_0.25: 0.9222, sofa_AP_0.25: 0.8389, table_AP_0.25: 0.6379, door_AP_0.25: 0.5258, window_AP_0.25: 0.4607, bookshelf_AP_0.25: 0.6158, picture_AP_0.25: 0.0267, counter_AP_0.25: 0.3786, desk_AP_0.25: 0.6611, curtain_AP_0.25: 0.4641, refrigerator_AP_0.25: 0.3623, showercurtrain_AP_0.25: 0.6162, toilet_AP_0.25: 1.0000, sink_AP_0.25: 0.6076, bathtub_AP_0.25: 0.8897, garbagebin_AP_0.25: 0.4481, mAP_0.25: 0.5962, cabinet_rec_0.25: 0.8898, bed_rec_0.25: 0.9383, chair_rec_0.25: 0.9576, sofa_rec_0.25: 0.9794, table_rec_0.25: 0.8571, door_rec_0.25: 0.8565, window_rec_0.25: 0.8511, bookshelf_rec_0.25: 0.9481, picture_rec_0.25: 0.1937, counter_rec_0.25: 0.8462, desk_rec_0.25: 0.9606, curtain_rec_0.25: 0.9104, refrigerator_rec_0.25: 0.8947, showercurtrain_rec_0.25: 0.9643, toilet_rec_0.25: 1.0000, sink_rec_0.25: 0.7347, bathtub_rec_0.25: 0.9677, garbagebin_rec_0.25: 0.8604, mAR_0.25: 0.8673, cabinet_AP_0.50: 0.1890, bed_AP_0.50: 0.7873, chair_AP_0.50: 0.8258, sofa_AP_0.50: 0.7098, table_AP_0.50: 0.5642, door_AP_0.50: 0.2898, window_AP_0.50: 0.1712, bookshelf_AP_0.50: 0.4836, picture_AP_0.50: 0.0071, counter_AP_0.50: 0.1008, desk_AP_0.50: 0.4330, curtain_AP_0.50: 0.3007, refrigerator_AP_0.50: 0.3328, showercurtrain_AP_0.50: 0.0889, toilet_AP_0.50: 0.9215, sink_AP_0.50: 0.3686, bathtub_AP_0.50: 0.7723, garbagebin_AP_0.50: 0.3195, mAP_0.50: 0.4259, cabinet_rec_0.50: 0.6022, bed_rec_0.50: 0.8642, chair_rec_0.50: 0.8640, sofa_rec_0.50: 0.9175, table_rec_0.50: 0.7714, door_rec_0.50: 0.5289, window_rec_0.50: 0.4752, bookshelf_rec_0.50: 0.8961, picture_rec_0.50: 0.0631, counter_rec_0.50: 0.3269, desk_rec_0.50: 0.8661, curtain_rec_0.50: 0.6418, refrigerator_rec_0.50: 0.8421, showercurtrain_rec_0.50: 0.3571, toilet_rec_0.50: 0.9310, sink_rec_0.50: 0.4898, bathtub_rec_0.50: 0.8065, garbagebin_rec_0.50: 0.6208, mAR_0.50: 0.6592
+2021-10-08 15:39:44,923 - mmdet - INFO - Epoch [6][50/751]	lr: 1.000e-03, eta: 0:37:07, time: 0.478, data_time: 0.061, memory: 1645, loss_centerness: 0.6187, loss_bbox: 0.3351, loss_cls: 0.1944, loss: 1.1482, grad_norm: 1.0452
+2021-10-08 15:40:05,809 - mmdet - INFO - Epoch [6][100/751]	lr: 1.000e-03, eta: 0:36:45, time: 0.418, data_time: 0.010, memory: 1645, loss_centerness: 0.6187, loss_bbox: 0.3326, loss_cls: 0.1956, loss: 1.1469, grad_norm: 0.9974
+2021-10-08 15:40:27,279 - mmdet - INFO - Epoch [6][150/751]	lr: 1.000e-03, eta: 0:36:24, time: 0.429, data_time: 0.011, memory: 1645, loss_centerness: 0.6200, loss_bbox: 0.3383, loss_cls: 0.1977, loss: 1.1559, grad_norm: 0.9894
+2021-10-08 15:40:48,397 - mmdet - INFO - Epoch [6][200/751]	lr: 1.000e-03, eta: 0:36:02, time: 0.422, data_time: 0.011, memory: 1645, loss_centerness: 0.6176, loss_bbox: 0.3401, loss_cls: 0.1968, loss: 1.1545, grad_norm: 1.1665
+2021-10-08 15:41:09,469 - mmdet - INFO - Epoch [6][250/751]	lr: 1.000e-03, eta: 0:35:41, time: 0.422, data_time: 0.012, memory: 1645, loss_centerness: 0.6171, loss_bbox: 0.3391, loss_cls: 0.1938, loss: 1.1500, grad_norm: 1.1191
+2021-10-08 15:41:30,657 - mmdet - INFO - Epoch [6][300/751]	lr: 1.000e-03, eta: 0:35:19, time: 0.424, data_time: 0.012, memory: 1645, loss_centerness: 0.6160, loss_bbox: 0.3347, loss_cls: 0.1911, loss: 1.1418, grad_norm: 0.9982
+2021-10-08 15:41:51,890 - mmdet - INFO - Epoch [6][350/751]	lr: 1.000e-03, eta: 0:34:57, time: 0.425, data_time: 0.011, memory: 1645, loss_centerness: 0.6165, loss_bbox: 0.3336, loss_cls: 0.1930, loss: 1.1431, grad_norm: 1.0229
+2021-10-08 15:42:13,942 - mmdet - INFO - Epoch [6][400/751]	lr: 1.000e-03, eta: 0:34:37, time: 0.441, data_time: 0.011, memory: 1645, loss_centerness: 0.6178, loss_bbox: 0.3301, loss_cls: 0.1892, loss: 1.1372, grad_norm: 0.9316
+2021-10-08 15:42:35,316 - mmdet - INFO - Epoch [6][450/751]	lr: 1.000e-03, eta: 0:34:15, time: 0.427, data_time: 0.011, memory: 1645, loss_centerness: 0.6189, loss_bbox: 0.3357, loss_cls: 0.1957, loss: 1.1503, grad_norm: 0.9369
+2021-10-08 15:42:56,338 - mmdet - INFO - Epoch [6][500/751]	lr: 1.000e-03, eta: 0:33:54, time: 0.421, data_time: 0.011, memory: 1645, loss_centerness: 0.6208, loss_bbox: 0.3318, loss_cls: 0.1889, loss: 1.1415, grad_norm: 1.0513
+2021-10-08 15:43:17,766 - mmdet - INFO - Epoch [6][550/751]	lr: 1.000e-03, eta: 0:33:32, time: 0.429, data_time: 0.011, memory: 1645, loss_centerness: 0.6169, loss_bbox: 0.3343, loss_cls: 0.1917, loss: 1.1429, grad_norm: 0.9631
+2021-10-08 15:43:39,798 - mmdet - INFO - Epoch [6][600/751]	lr: 1.000e-03, eta: 0:33:12, time: 0.440, data_time: 0.012, memory: 1645, loss_centerness: 0.6162, loss_bbox: 0.3350, loss_cls: 0.1928, loss: 1.1441, grad_norm: 1.1733
+2021-10-08 15:44:01,728 - mmdet - INFO - Epoch [6][650/751]	lr: 1.000e-03, eta: 0:32:51, time: 0.439, data_time: 0.012, memory: 1645, loss_centerness: 0.6178, loss_bbox: 0.3319, loss_cls: 0.1896, loss: 1.1393, grad_norm: 0.9327
+2021-10-08 15:44:23,143 - mmdet - INFO - Epoch [6][700/751]	lr: 1.000e-03, eta: 0:32:29, time: 0.428, data_time: 0.012, memory: 1645, loss_centerness: 0.6154, loss_bbox: 0.3304, loss_cls: 0.1887, loss: 1.1345, grad_norm: 0.8888
+2021-10-08 15:44:44,696 - mmdet - INFO - Epoch [6][750/751]	lr: 1.000e-03, eta: 0:32:08, time: 0.431, data_time: 0.011, memory: 1645, loss_centerness: 0.6171, loss_bbox: 0.3289, loss_cls: 0.1884, loss: 1.1344, grad_norm: 1.0343
+2021-10-08 15:44:45,238 - mmdet - INFO - Saving checkpoint at 6 epochs
+2021-10-08 15:45:02,624 - mmdet - INFO - 
++----------------+---------+---------+---------+---------+
+| classes        | AP_0.25 | AR_0.25 | AP_0.50 | AR_0.50 |
++----------------+---------+---------+---------+---------+
+| cabinet        | 0.4272  | 0.9005  | 0.2263  | 0.5914  |
+| bed            | 0.8671  | 0.9136  | 0.7776  | 0.8519  |
+| chair          | 0.9294  | 0.9605  | 0.8442  | 0.8867  |
+| sofa           | 0.8529  | 0.9794  | 0.7379  | 0.9278  |
+| table          | 0.6321  | 0.8657  | 0.5603  | 0.7600  |
+| door           | 0.5311  | 0.8801  | 0.2838  | 0.5546  |
+| window         | 0.4653  | 0.8617  | 0.2009  | 0.5000  |
+| bookshelf      | 0.6167  | 0.9610  | 0.5471  | 0.8701  |
+| picture        | 0.0668  | 0.2432  | 0.0263  | 0.0721  |
+| counter        | 0.3985  | 0.8654  | 0.1128  | 0.3654  |
+| desk           | 0.7556  | 0.9685  | 0.5203  | 0.8661  |
+| curtain        | 0.4811  | 0.9403  | 0.3290  | 0.6716  |
+| refrigerator   | 0.3793  | 0.9649  | 0.3253  | 0.9123  |
+| showercurtrain | 0.7022  | 0.9643  | 0.1999  | 0.4643  |
+| toilet         | 0.9997  | 1.0000  | 0.9569  | 0.9655  |
+| sink           | 0.6532  | 0.7959  | 0.3083  | 0.4592  |
+| bathtub        | 0.9278  | 0.9677  | 0.7396  | 0.8710  |
+| garbagebin     | 0.4694  | 0.8792  | 0.3179  | 0.6321  |
++----------------+---------+---------+---------+---------+
+| Overall        | 0.6197  | 0.8840  | 0.4452  | 0.6790  |
++----------------+---------+---------+---------+---------+
+2021-10-08 15:45:02,768 - mmdet - INFO - Exp name: fcaf3d_scannet-3d-18class.py
+2021-10-08 15:45:02,768 - mmdet - INFO - Epoch(val) [6][156]	cabinet_AP_0.25: 0.4272, bed_AP_0.25: 0.8671, chair_AP_0.25: 0.9294, sofa_AP_0.25: 0.8529, table_AP_0.25: 0.6321, door_AP_0.25: 0.5311, window_AP_0.25: 0.4653, bookshelf_AP_0.25: 0.6167, picture_AP_0.25: 0.0668, counter_AP_0.25: 0.3985, desk_AP_0.25: 0.7556, curtain_AP_0.25: 0.4811, refrigerator_AP_0.25: 0.3793, showercurtrain_AP_0.25: 0.7022, toilet_AP_0.25: 0.9997, sink_AP_0.25: 0.6532, bathtub_AP_0.25: 0.9278, garbagebin_AP_0.25: 0.4694, mAP_0.25: 0.6197, cabinet_rec_0.25: 0.9005, bed_rec_0.25: 0.9136, chair_rec_0.25: 0.9605, sofa_rec_0.25: 0.9794, table_rec_0.25: 0.8657, door_rec_0.25: 0.8801, window_rec_0.25: 0.8617, bookshelf_rec_0.25: 0.9610, picture_rec_0.25: 0.2432, counter_rec_0.25: 0.8654, desk_rec_0.25: 0.9685, curtain_rec_0.25: 0.9403, refrigerator_rec_0.25: 0.9649, showercurtrain_rec_0.25: 0.9643, toilet_rec_0.25: 1.0000, sink_rec_0.25: 0.7959, bathtub_rec_0.25: 0.9677, garbagebin_rec_0.25: 0.8792, mAR_0.25: 0.8840, cabinet_AP_0.50: 0.2263, bed_AP_0.50: 0.7776, chair_AP_0.50: 0.8442, sofa_AP_0.50: 0.7379, table_AP_0.50: 0.5603, door_AP_0.50: 0.2838, window_AP_0.50: 0.2009, bookshelf_AP_0.50: 0.5471, picture_AP_0.50: 0.0263, counter_AP_0.50: 0.1128, desk_AP_0.50: 0.5203, curtain_AP_0.50: 0.3290, refrigerator_AP_0.50: 0.3253, showercurtrain_AP_0.50: 0.1999, toilet_AP_0.50: 0.9569, sink_AP_0.50: 0.3083, bathtub_AP_0.50: 0.7396, garbagebin_AP_0.50: 0.3179, mAP_0.50: 0.4452, cabinet_rec_0.50: 0.5914, bed_rec_0.50: 0.8519, chair_rec_0.50: 0.8867, sofa_rec_0.50: 0.9278, table_rec_0.50: 0.7600, door_rec_0.50: 0.5546, window_rec_0.50: 0.5000, bookshelf_rec_0.50: 0.8701, picture_rec_0.50: 0.0721, counter_rec_0.50: 0.3654, desk_rec_0.50: 0.8661, curtain_rec_0.50: 0.6716, refrigerator_rec_0.50: 0.9123, showercurtrain_rec_0.50: 0.4643, toilet_rec_0.50: 0.9655, sink_rec_0.50: 0.4592, bathtub_rec_0.50: 0.8710, garbagebin_rec_0.50: 0.6321, mAR_0.50: 0.6790
+2021-10-08 15:45:26,160 - mmdet - INFO - Epoch [7][50/751]	lr: 1.000e-03, eta: 0:31:48, time: 0.468, data_time: 0.061, memory: 1645, loss_centerness: 0.6175, loss_bbox: 0.3295, loss_cls: 0.1884, loss: 1.1354, grad_norm: 0.9773
+2021-10-08 15:45:46,687 - mmdet - INFO - Epoch [7][100/751]	lr: 1.000e-03, eta: 0:31:26, time: 0.411, data_time: 0.011, memory: 1645, loss_centerness: 0.6162, loss_bbox: 0.3281, loss_cls: 0.1855, loss: 1.1298, grad_norm: 0.9838
+2021-10-08 15:46:07,663 - mmdet - INFO - Epoch [7][150/751]	lr: 1.000e-03, eta: 0:31:04, time: 0.420, data_time: 0.011, memory: 1645, loss_centerness: 0.6189, loss_bbox: 0.3271, loss_cls: 0.1824, loss: 1.1284, grad_norm: 1.0977
+2021-10-08 15:46:28,634 - mmdet - INFO - Epoch [7][200/751]	lr: 1.000e-03, eta: 0:30:42, time: 0.419, data_time: 0.011, memory: 1645, loss_centerness: 0.6157, loss_bbox: 0.3311, loss_cls: 0.1844, loss: 1.1312, grad_norm: 1.0587
+2021-10-08 15:46:49,526 - mmdet - INFO - Epoch [7][250/751]	lr: 1.000e-03, eta: 0:30:20, time: 0.418, data_time: 0.011, memory: 1645, loss_centerness: 0.6165, loss_bbox: 0.3303, loss_cls: 0.1845, loss: 1.1313, grad_norm: 0.9898
+2021-10-08 15:47:11,493 - mmdet - INFO - Epoch [7][300/751]	lr: 1.000e-03, eta: 0:29:59, time: 0.439, data_time: 0.011, memory: 1645, loss_centerness: 0.6177, loss_bbox: 0.3231, loss_cls: 0.1818, loss: 1.1225, grad_norm: 0.9268
+2021-10-08 15:47:33,040 - mmdet - INFO - Epoch [7][350/751]	lr: 1.000e-03, eta: 0:29:38, time: 0.431, data_time: 0.011, memory: 1645, loss_centerness: 0.6180, loss_bbox: 0.3226, loss_cls: 0.1818, loss: 1.1224, grad_norm: 0.9698
+2021-10-08 15:47:54,521 - mmdet - INFO - Epoch [7][400/751]	lr: 1.000e-03, eta: 0:29:17, time: 0.430, data_time: 0.011, memory: 1645, loss_centerness: 0.6165, loss_bbox: 0.3254, loss_cls: 0.1812, loss: 1.1230, grad_norm: 0.9627
+2021-10-08 15:48:16,683 - mmdet - INFO - Epoch [7][450/751]	lr: 1.000e-03, eta: 0:28:56, time: 0.443, data_time: 0.011, memory: 1645, loss_centerness: 0.6171, loss_bbox: 0.3247, loss_cls: 0.1828, loss: 1.1247, grad_norm: 1.0895
+2021-10-08 15:48:37,669 - mmdet - INFO - Epoch [7][500/751]	lr: 1.000e-03, eta: 0:28:34, time: 0.420, data_time: 0.011, memory: 1645, loss_centerness: 0.6183, loss_bbox: 0.3243, loss_cls: 0.1794, loss: 1.1221, grad_norm: 1.0332
+2021-10-08 15:48:59,249 - mmdet - INFO - Epoch [7][550/751]	lr: 1.000e-03, eta: 0:28:13, time: 0.432, data_time: 0.011, memory: 1645, loss_centerness: 0.6178, loss_bbox: 0.3187, loss_cls: 0.1800, loss: 1.1165, grad_norm: 0.9345
+2021-10-08 15:49:21,142 - mmdet - INFO - Epoch [7][600/751]	lr: 1.000e-03, eta: 0:27:52, time: 0.438, data_time: 0.011, memory: 1645, loss_centerness: 0.6168, loss_bbox: 0.3247, loss_cls: 0.1837, loss: 1.1252, grad_norm: 0.9663
+2021-10-08 15:49:42,910 - mmdet - INFO - Epoch [7][650/751]	lr: 1.000e-03, eta: 0:27:31, time: 0.435, data_time: 0.011, memory: 1645, loss_centerness: 0.6170, loss_bbox: 0.3251, loss_cls: 0.1822, loss: 1.1243, grad_norm: 1.0115
+2021-10-08 15:50:04,391 - mmdet - INFO - Epoch [7][700/751]	lr: 1.000e-03, eta: 0:27:09, time: 0.430, data_time: 0.012, memory: 1645, loss_centerness: 0.6178, loss_bbox: 0.3220, loss_cls: 0.1813, loss: 1.1211, grad_norm: 0.9379
+2021-10-08 15:50:25,825 - mmdet - INFO - Epoch [7][750/751]	lr: 1.000e-03, eta: 0:26:48, time: 0.428, data_time: 0.011, memory: 1645, loss_centerness: 0.6176, loss_bbox: 0.3186, loss_cls: 0.1790, loss: 1.1153, grad_norm: 0.9849
+2021-10-08 15:50:26,331 - mmdet - INFO - Saving checkpoint at 7 epochs
+2021-10-08 15:50:43,079 - mmdet - INFO - 
++----------------+---------+---------+---------+---------+
+| classes        | AP_0.25 | AR_0.25 | AP_0.50 | AR_0.50 |
++----------------+---------+---------+---------+---------+
+| cabinet        | 0.4254  | 0.9059  | 0.2037  | 0.5591  |
+| bed            | 0.8699  | 0.9259  | 0.8204  | 0.8765  |
+| chair          | 0.9334  | 0.9656  | 0.8403  | 0.8830  |
+| sofa           | 0.8531  | 0.9794  | 0.7361  | 0.9381  |
+| table          | 0.6623  | 0.8857  | 0.5742  | 0.7571  |
+| door           | 0.5385  | 0.8565  | 0.2911  | 0.5460  |
+| window         | 0.4638  | 0.8121  | 0.1625  | 0.4539  |
+| bookshelf      | 0.6428  | 0.9740  | 0.4787  | 0.8571  |
+| picture        | 0.0600  | 0.2387  | 0.0155  | 0.0766  |
+| counter        | 0.4086  | 0.8846  | 0.0980  | 0.4038  |
+| desk           | 0.7178  | 0.9685  | 0.4714  | 0.8504  |
+| curtain        | 0.5158  | 0.9104  | 0.2343  | 0.5970  |
+| refrigerator   | 0.4139  | 0.9123  | 0.3492  | 0.8070  |
+| showercurtrain | 0.7021  | 0.9286  | 0.1177  | 0.3571  |
+| toilet         | 0.9989  | 1.0000  | 0.9163  | 0.9310  |
+| sink           | 0.5891  | 0.7245  | 0.3402  | 0.4694  |
+| bathtub        | 0.8613  | 0.9677  | 0.6972  | 0.8065  |
+| garbagebin     | 0.4631  | 0.8472  | 0.3123  | 0.6057  |
++----------------+---------+---------+---------+---------+
+| Overall        | 0.6178  | 0.8715  | 0.4255  | 0.6542  |
++----------------+---------+---------+---------+---------+
+2021-10-08 15:50:43,213 - mmdet - INFO - Exp name: fcaf3d_scannet-3d-18class.py
+2021-10-08 15:50:43,213 - mmdet - INFO - Epoch(val) [7][156]	cabinet_AP_0.25: 0.4254, bed_AP_0.25: 0.8699, chair_AP_0.25: 0.9334, sofa_AP_0.25: 0.8531, table_AP_0.25: 0.6623, door_AP_0.25: 0.5385, window_AP_0.25: 0.4638, bookshelf_AP_0.25: 0.6428, picture_AP_0.25: 0.0600, counter_AP_0.25: 0.4086, desk_AP_0.25: 0.7178, curtain_AP_0.25: 0.5158, refrigerator_AP_0.25: 0.4139, showercurtrain_AP_0.25: 0.7021, toilet_AP_0.25: 0.9989, sink_AP_0.25: 0.5891, bathtub_AP_0.25: 0.8613, garbagebin_AP_0.25: 0.4631, mAP_0.25: 0.6178, cabinet_rec_0.25: 0.9059, bed_rec_0.25: 0.9259, chair_rec_0.25: 0.9656, sofa_rec_0.25: 0.9794, table_rec_0.25: 0.8857, door_rec_0.25: 0.8565, window_rec_0.25: 0.8121, bookshelf_rec_0.25: 0.9740, picture_rec_0.25: 0.2387, counter_rec_0.25: 0.8846, desk_rec_0.25: 0.9685, curtain_rec_0.25: 0.9104, refrigerator_rec_0.25: 0.9123, showercurtrain_rec_0.25: 0.9286, toilet_rec_0.25: 1.0000, sink_rec_0.25: 0.7245, bathtub_rec_0.25: 0.9677, garbagebin_rec_0.25: 0.8472, mAR_0.25: 0.8715, cabinet_AP_0.50: 0.2037, bed_AP_0.50: 0.8204, chair_AP_0.50: 0.8403, sofa_AP_0.50: 0.7361, table_AP_0.50: 0.5742, door_AP_0.50: 0.2911, window_AP_0.50: 0.1625, bookshelf_AP_0.50: 0.4787, picture_AP_0.50: 0.0155, counter_AP_0.50: 0.0980, desk_AP_0.50: 0.4714, curtain_AP_0.50: 0.2343, refrigerator_AP_0.50: 0.3492, showercurtrain_AP_0.50: 0.1177, toilet_AP_0.50: 0.9163, sink_AP_0.50: 0.3402, bathtub_AP_0.50: 0.6972, garbagebin_AP_0.50: 0.3123, mAP_0.50: 0.4255, cabinet_rec_0.50: 0.5591, bed_rec_0.50: 0.8765, chair_rec_0.50: 0.8830, sofa_rec_0.50: 0.9381, table_rec_0.50: 0.7571, door_rec_0.50: 0.5460, window_rec_0.50: 0.4539, bookshelf_rec_0.50: 0.8571, picture_rec_0.50: 0.0766, counter_rec_0.50: 0.4038, desk_rec_0.50: 0.8504, curtain_rec_0.50: 0.5970, refrigerator_rec_0.50: 0.8070, showercurtrain_rec_0.50: 0.3571, toilet_rec_0.50: 0.9310, sink_rec_0.50: 0.4694, bathtub_rec_0.50: 0.8065, garbagebin_rec_0.50: 0.6057, mAR_0.50: 0.6542
+2021-10-08 15:51:06,813 - mmdet - INFO - Epoch [8][50/751]	lr: 1.000e-03, eta: 0:26:27, time: 0.472, data_time: 0.060, memory: 1645, loss_centerness: 0.6160, loss_bbox: 0.3167, loss_cls: 0.1731, loss: 1.1058, grad_norm: 1.0011
+2021-10-08 15:51:28,166 - mmdet - INFO - Epoch [8][100/751]	lr: 1.000e-03, eta: 0:26:06, time: 0.427, data_time: 0.012, memory: 1645, loss_centerness: 0.6153, loss_bbox: 0.3221, loss_cls: 0.1745, loss: 1.1119, grad_norm: 1.0400
+2021-10-08 15:51:49,498 - mmdet - INFO - Epoch [8][150/751]	lr: 1.000e-03, eta: 0:25:44, time: 0.427, data_time: 0.011, memory: 1645, loss_centerness: 0.6155, loss_bbox: 0.3237, loss_cls: 0.1762, loss: 1.1153, grad_norm: 1.1586
+2021-10-08 15:52:11,190 - mmdet - INFO - Epoch [8][200/751]	lr: 1.000e-03, eta: 0:25:23, time: 0.434, data_time: 0.011, memory: 1645, loss_centerness: 0.6171, loss_bbox: 0.3197, loss_cls: 0.1783, loss: 1.1151, grad_norm: 1.0135
+2021-10-08 15:52:32,093 - mmdet - INFO - Epoch [8][250/751]	lr: 1.000e-03, eta: 0:25:01, time: 0.418, data_time: 0.011, memory: 1645, loss_centerness: 0.6150, loss_bbox: 0.3194, loss_cls: 0.1766, loss: 1.1111, grad_norm: 0.9843
+2021-10-08 15:52:53,465 - mmdet - INFO - Epoch [8][300/751]	lr: 1.000e-03, eta: 0:24:40, time: 0.427, data_time: 0.011, memory: 1645, loss_centerness: 0.6174, loss_bbox: 0.3185, loss_cls: 0.1767, loss: 1.1126, grad_norm: 0.9103
+2021-10-08 15:53:15,142 - mmdet - INFO - Epoch [8][350/751]	lr: 1.000e-03, eta: 0:24:19, time: 0.433, data_time: 0.011, memory: 1645, loss_centerness: 0.6173, loss_bbox: 0.3180, loss_cls: 0.1737, loss: 1.1090, grad_norm: 1.1084
+2021-10-08 15:53:36,192 - mmdet - INFO - Epoch [8][400/751]	lr: 1.000e-03, eta: 0:23:57, time: 0.421, data_time: 0.011, memory: 1645, loss_centerness: 0.6167, loss_bbox: 0.3124, loss_cls: 0.1718, loss: 1.1008, grad_norm: 0.9624
+2021-10-08 15:53:58,002 - mmdet - INFO - Epoch [8][450/751]	lr: 1.000e-03, eta: 0:23:36, time: 0.436, data_time: 0.011, memory: 1645, loss_centerness: 0.6155, loss_bbox: 0.3198, loss_cls: 0.1736, loss: 1.1089, grad_norm: 1.0195
+2021-10-08 15:54:19,199 - mmdet - INFO - Epoch [8][500/751]	lr: 1.000e-03, eta: 0:23:14, time: 0.424, data_time: 0.011, memory: 1645, loss_centerness: 0.6147, loss_bbox: 0.3201, loss_cls: 0.1753, loss: 1.1100, grad_norm: 1.0132
+2021-10-08 15:54:40,467 - mmdet - INFO - Epoch [8][550/751]	lr: 1.000e-03, eta: 0:22:53, time: 0.425, data_time: 0.011, memory: 1645, loss_centerness: 0.6171, loss_bbox: 0.3170, loss_cls: 0.1703, loss: 1.1044, grad_norm: 1.0679
+2021-10-08 15:55:01,652 - mmdet - INFO - Epoch [8][600/751]	lr: 1.000e-03, eta: 0:22:31, time: 0.424, data_time: 0.011, memory: 1645, loss_centerness: 0.6158, loss_bbox: 0.3158, loss_cls: 0.1741, loss: 1.1056, grad_norm: 0.9409
+2021-10-08 15:55:23,092 - mmdet - INFO - Epoch [8][650/751]	lr: 1.000e-03, eta: 0:22:10, time: 0.428, data_time: 0.011, memory: 1645, loss_centerness: 0.6168, loss_bbox: 0.3146, loss_cls: 0.1717, loss: 1.1031, grad_norm: 1.0091
+2021-10-08 15:55:45,052 - mmdet - INFO - Epoch [8][700/751]	lr: 1.000e-03, eta: 0:21:49, time: 0.440, data_time: 0.011, memory: 1645, loss_centerness: 0.6172, loss_bbox: 0.3173, loss_cls: 0.1727, loss: 1.1072, grad_norm: 1.0643
+2021-10-08 15:56:06,343 - mmdet - INFO - Epoch [8][750/751]	lr: 1.000e-03, eta: 0:21:27, time: 0.426, data_time: 0.011, memory: 1645, loss_centerness: 0.6133, loss_bbox: 0.3201, loss_cls: 0.1706, loss: 1.1040, grad_norm: 1.0665
+2021-10-08 15:56:06,823 - mmdet - INFO - Saving checkpoint at 8 epochs
+2021-10-08 15:56:22,864 - mmdet - INFO - 
++----------------+---------+---------+---------+---------+
+| classes        | AP_0.25 | AR_0.25 | AP_0.50 | AR_0.50 |
++----------------+---------+---------+---------+---------+
+| cabinet        | 0.4318  | 0.8683  | 0.2191  | 0.5699  |
+| bed            | 0.8617  | 0.9383  | 0.8062  | 0.8519  |
+| chair          | 0.9283  | 0.9591  | 0.8337  | 0.8757  |
+| sofa           | 0.8390  | 0.9794  | 0.7182  | 0.9278  |
+| table          | 0.6534  | 0.8600  | 0.5752  | 0.7571  |
+| door           | 0.5490  | 0.8522  | 0.3055  | 0.5546  |
+| window         | 0.4293  | 0.7943  | 0.1884  | 0.4362  |
+| bookshelf      | 0.4822  | 0.9091  | 0.3838  | 0.7792  |
+| picture        | 0.0681  | 0.2432  | 0.0160  | 0.0811  |
+| counter        | 0.3533  | 0.8269  | 0.0726  | 0.3462  |
+| desk           | 0.7118  | 0.9685  | 0.4779  | 0.8268  |
+| curtain        | 0.5215  | 0.9104  | 0.2914  | 0.6567  |
+| refrigerator   | 0.3832  | 0.9474  | 0.3115  | 0.8070  |
+| showercurtrain | 0.7942  | 0.9643  | 0.1805  | 0.3929  |
+| toilet         | 0.9961  | 1.0000  | 0.8791  | 0.8966  |
+| sink           | 0.6268  | 0.7551  | 0.4022  | 0.5102  |
+| bathtub        | 0.8420  | 0.9355  | 0.8076  | 0.8387  |
+| garbagebin     | 0.4616  | 0.8283  | 0.3190  | 0.5925  |
++----------------+---------+---------+---------+---------+
+| Overall        | 0.6074  | 0.8634  | 0.4327  | 0.6501  |
++----------------+---------+---------+---------+---------+
+2021-10-08 15:56:22,988 - mmdet - INFO - Exp name: fcaf3d_scannet-3d-18class.py
+2021-10-08 15:56:22,988 - mmdet - INFO - Epoch(val) [8][156]	cabinet_AP_0.25: 0.4318, bed_AP_0.25: 0.8617, chair_AP_0.25: 0.9283, sofa_AP_0.25: 0.8390, table_AP_0.25: 0.6534, door_AP_0.25: 0.5490, window_AP_0.25: 0.4293, bookshelf_AP_0.25: 0.4822, picture_AP_0.25: 0.0681, counter_AP_0.25: 0.3533, desk_AP_0.25: 0.7118, curtain_AP_0.25: 0.5215, refrigerator_AP_0.25: 0.3832, showercurtrain_AP_0.25: 0.7942, toilet_AP_0.25: 0.9961, sink_AP_0.25: 0.6268, bathtub_AP_0.25: 0.8420, garbagebin_AP_0.25: 0.4616, mAP_0.25: 0.6074, cabinet_rec_0.25: 0.8683, bed_rec_0.25: 0.9383, chair_rec_0.25: 0.9591, sofa_rec_0.25: 0.9794, table_rec_0.25: 0.8600, door_rec_0.25: 0.8522, window_rec_0.25: 0.7943, bookshelf_rec_0.25: 0.9091, picture_rec_0.25: 0.2432, counter_rec_0.25: 0.8269, desk_rec_0.25: 0.9685, curtain_rec_0.25: 0.9104, refrigerator_rec_0.25: 0.9474, showercurtrain_rec_0.25: 0.9643, toilet_rec_0.25: 1.0000, sink_rec_0.25: 0.7551, bathtub_rec_0.25: 0.9355, garbagebin_rec_0.25: 0.8283, mAR_0.25: 0.8634, cabinet_AP_0.50: 0.2191, bed_AP_0.50: 0.8062, chair_AP_0.50: 0.8337, sofa_AP_0.50: 0.7182, table_AP_0.50: 0.5752, door_AP_0.50: 0.3055, window_AP_0.50: 0.1884, bookshelf_AP_0.50: 0.3838, picture_AP_0.50: 0.0160, counter_AP_0.50: 0.0726, desk_AP_0.50: 0.4779, curtain_AP_0.50: 0.2914, refrigerator_AP_0.50: 0.3115, showercurtrain_AP_0.50: 0.1805, toilet_AP_0.50: 0.8791, sink_AP_0.50: 0.4022, bathtub_AP_0.50: 0.8076, garbagebin_AP_0.50: 0.3190, mAP_0.50: 0.4327, cabinet_rec_0.50: 0.5699, bed_rec_0.50: 0.8519, chair_rec_0.50: 0.8757, sofa_rec_0.50: 0.9278, table_rec_0.50: 0.7571, door_rec_0.50: 0.5546, window_rec_0.50: 0.4362, bookshelf_rec_0.50: 0.7792, picture_rec_0.50: 0.0811, counter_rec_0.50: 0.3462, desk_rec_0.50: 0.8268, curtain_rec_0.50: 0.6567, refrigerator_rec_0.50: 0.8070, showercurtrain_rec_0.50: 0.3929, toilet_rec_0.50: 0.8966, sink_rec_0.50: 0.5102, bathtub_rec_0.50: 0.8387, garbagebin_rec_0.50: 0.5925, mAR_0.50: 0.6501
+2021-10-08 15:56:46,423 - mmdet - INFO - Epoch [9][50/751]	lr: 1.000e-04, eta: 0:21:06, time: 0.469, data_time: 0.061, memory: 1645, loss_centerness: 0.6161, loss_bbox: 0.3067, loss_cls: 0.1661, loss: 1.0889, grad_norm: 0.6826
+2021-10-08 15:57:07,781 - mmdet - INFO - Epoch [9][100/751]	lr: 1.000e-04, eta: 0:20:45, time: 0.427, data_time: 0.011, memory: 1645, loss_centerness: 0.6149, loss_bbox: 0.2989, loss_cls: 0.1629, loss: 1.0768, grad_norm: 0.6826
+2021-10-08 15:57:29,097 - mmdet - INFO - Epoch [9][150/751]	lr: 1.000e-04, eta: 0:20:23, time: 0.426, data_time: 0.011, memory: 1645, loss_centerness: 0.6137, loss_bbox: 0.2985, loss_cls: 0.1596, loss: 1.0717, grad_norm: 0.6893
+2021-10-08 15:57:49,981 - mmdet - INFO - Epoch [9][200/751]	lr: 1.000e-04, eta: 0:20:01, time: 0.418, data_time: 0.011, memory: 1645, loss_centerness: 0.6120, loss_bbox: 0.2979, loss_cls: 0.1567, loss: 1.0667, grad_norm: 0.6949
+2021-10-08 15:58:11,594 - mmdet - INFO - Epoch [9][250/751]	lr: 1.000e-04, eta: 0:19:40, time: 0.432, data_time: 0.011, memory: 1645, loss_centerness: 0.6164, loss_bbox: 0.2937, loss_cls: 0.1580, loss: 1.0681, grad_norm: 0.7254
+2021-10-08 15:58:32,519 - mmdet - INFO - Epoch [9][300/751]	lr: 1.000e-04, eta: 0:19:18, time: 0.418, data_time: 0.011, memory: 1645, loss_centerness: 0.6161, loss_bbox: 0.2891, loss_cls: 0.1514, loss: 1.0566, grad_norm: 0.7788
+2021-10-08 15:58:53,707 - mmdet - INFO - Epoch [9][350/751]	lr: 1.000e-04, eta: 0:18:57, time: 0.424, data_time: 0.011, memory: 1645, loss_centerness: 0.6147, loss_bbox: 0.2938, loss_cls: 0.1513, loss: 1.0598, grad_norm: 0.7186
+2021-10-08 15:59:14,937 - mmdet - INFO - Epoch [9][400/751]	lr: 1.000e-04, eta: 0:18:35, time: 0.425, data_time: 0.011, memory: 1645, loss_centerness: 0.6133, loss_bbox: 0.2957, loss_cls: 0.1567, loss: 1.0657, grad_norm: 0.7429
+2021-10-08 15:59:36,447 - mmdet - INFO - Epoch [9][450/751]	lr: 1.000e-04, eta: 0:18:14, time: 0.430, data_time: 0.011, memory: 1645, loss_centerness: 0.6139, loss_bbox: 0.2959, loss_cls: 0.1581, loss: 1.0679, grad_norm: 0.7492
+2021-10-08 15:59:58,518 - mmdet - INFO - Epoch [9][500/751]	lr: 1.000e-04, eta: 0:17:53, time: 0.442, data_time: 0.011, memory: 1645, loss_centerness: 0.6164, loss_bbox: 0.2983, loss_cls: 0.1584, loss: 1.0731, grad_norm: 0.7873
+2021-10-08 16:00:20,201 - mmdet - INFO - Epoch [9][550/751]	lr: 1.000e-04, eta: 0:17:31, time: 0.434, data_time: 0.011, memory: 1645, loss_centerness: 0.6152, loss_bbox: 0.2937, loss_cls: 0.1561, loss: 1.0650, grad_norm: 0.7132
+2021-10-08 16:00:41,984 - mmdet - INFO - Epoch [9][600/751]	lr: 1.000e-04, eta: 0:17:10, time: 0.436, data_time: 0.011, memory: 1645, loss_centerness: 0.6152, loss_bbox: 0.2924, loss_cls: 0.1526, loss: 1.0602, grad_norm: 0.7023
+2021-10-08 16:01:03,215 - mmdet - INFO - Epoch [9][650/751]	lr: 1.000e-04, eta: 0:16:49, time: 0.425, data_time: 0.011, memory: 1645, loss_centerness: 0.6150, loss_bbox: 0.2901, loss_cls: 0.1505, loss: 1.0556, grad_norm: 0.7326
+2021-10-08 16:01:25,027 - mmdet - INFO - Epoch [9][700/751]	lr: 1.000e-04, eta: 0:16:27, time: 0.436, data_time: 0.011, memory: 1645, loss_centerness: 0.6157, loss_bbox: 0.2926, loss_cls: 0.1524, loss: 1.0606, grad_norm: 0.7144
+2021-10-08 16:01:46,514 - mmdet - INFO - Epoch [9][750/751]	lr: 1.000e-04, eta: 0:16:06, time: 0.430, data_time: 0.011, memory: 1645, loss_centerness: 0.6127, loss_bbox: 0.2922, loss_cls: 0.1535, loss: 1.0584, grad_norm: 0.8132
+2021-10-08 16:01:47,050 - mmdet - INFO - Saving checkpoint at 9 epochs
+2021-10-08 16:02:02,608 - mmdet - INFO - 
++----------------+---------+---------+---------+---------+
+| classes        | AP_0.25 | AR_0.25 | AP_0.50 | AR_0.50 |
++----------------+---------+---------+---------+---------+
+| cabinet        | 0.4692  | 0.8790  | 0.2528  | 0.6102  |
+| bed            | 0.8668  | 0.9506  | 0.7944  | 0.8642  |
+| chair          | 0.9381  | 0.9678  | 0.8395  | 0.8808  |
+| sofa           | 0.8851  | 0.9794  | 0.7428  | 0.9175  |
+| table          | 0.6542  | 0.8657  | 0.5838  | 0.7571  |
+| door           | 0.5642  | 0.8522  | 0.3209  | 0.5653  |
+| window         | 0.4759  | 0.8227  | 0.2205  | 0.5319  |
+| bookshelf      | 0.5493  | 0.9351  | 0.4727  | 0.8442  |
+| picture        | 0.0756  | 0.2883  | 0.0256  | 0.1036  |
+| counter        | 0.4328  | 0.8077  | 0.1697  | 0.4038  |
+| desk           | 0.7231  | 0.9843  | 0.4996  | 0.8583  |
+| curtain        | 0.5356  | 0.8806  | 0.4080  | 0.6866  |
+| refrigerator   | 0.4170  | 0.9298  | 0.3597  | 0.8070  |
+| showercurtrain | 0.7843  | 0.9643  | 0.1989  | 0.5000  |
+| toilet         | 1.0000  | 1.0000  | 0.9000  | 0.9138  |
+| sink           | 0.6383  | 0.7653  | 0.3871  | 0.5102  |
+| bathtub        | 0.8531  | 0.9355  | 0.7979  | 0.8065  |
+| garbagebin     | 0.5051  | 0.8453  | 0.3802  | 0.6283  |
++----------------+---------+---------+---------+---------+
+| Overall        | 0.6315  | 0.8696  | 0.4641  | 0.6772  |
++----------------+---------+---------+---------+---------+
+2021-10-08 16:02:02,722 - mmdet - INFO - Exp name: fcaf3d_scannet-3d-18class.py
+2021-10-08 16:02:02,722 - mmdet - INFO - Epoch(val) [9][156]	cabinet_AP_0.25: 0.4692, bed_AP_0.25: 0.8668, chair_AP_0.25: 0.9381, sofa_AP_0.25: 0.8851, table_AP_0.25: 0.6542, door_AP_0.25: 0.5642, window_AP_0.25: 0.4759, bookshelf_AP_0.25: 0.5493, picture_AP_0.25: 0.0756, counter_AP_0.25: 0.4328, desk_AP_0.25: 0.7231, curtain_AP_0.25: 0.5356, refrigerator_AP_0.25: 0.4170, showercurtrain_AP_0.25: 0.7843, toilet_AP_0.25: 1.0000, sink_AP_0.25: 0.6383, bathtub_AP_0.25: 0.8531, garbagebin_AP_0.25: 0.5051, mAP_0.25: 0.6315, cabinet_rec_0.25: 0.8790, bed_rec_0.25: 0.9506, chair_rec_0.25: 0.9678, sofa_rec_0.25: 0.9794, table_rec_0.25: 0.8657, door_rec_0.25: 0.8522, window_rec_0.25: 0.8227, bookshelf_rec_0.25: 0.9351, picture_rec_0.25: 0.2883, counter_rec_0.25: 0.8077, desk_rec_0.25: 0.9843, curtain_rec_0.25: 0.8806, refrigerator_rec_0.25: 0.9298, showercurtrain_rec_0.25: 0.9643, toilet_rec_0.25: 1.0000, sink_rec_0.25: 0.7653, bathtub_rec_0.25: 0.9355, garbagebin_rec_0.25: 0.8453, mAR_0.25: 0.8696, cabinet_AP_0.50: 0.2528, bed_AP_0.50: 0.7944, chair_AP_0.50: 0.8395, sofa_AP_0.50: 0.7428, table_AP_0.50: 0.5838, door_AP_0.50: 0.3209, window_AP_0.50: 0.2205, bookshelf_AP_0.50: 0.4727, picture_AP_0.50: 0.0256, counter_AP_0.50: 0.1697, desk_AP_0.50: 0.4996, curtain_AP_0.50: 0.4080, refrigerator_AP_0.50: 0.3597, showercurtrain_AP_0.50: 0.1989, toilet_AP_0.50: 0.9000, sink_AP_0.50: 0.3871, bathtub_AP_0.50: 0.7979, garbagebin_AP_0.50: 0.3802, mAP_0.50: 0.4641, cabinet_rec_0.50: 0.6102, bed_rec_0.50: 0.8642, chair_rec_0.50: 0.8808, sofa_rec_0.50: 0.9175, table_rec_0.50: 0.7571, door_rec_0.50: 0.5653, window_rec_0.50: 0.5319, bookshelf_rec_0.50: 0.8442, picture_rec_0.50: 0.1036, counter_rec_0.50: 0.4038, desk_rec_0.50: 0.8583, curtain_rec_0.50: 0.6866, refrigerator_rec_0.50: 0.8070, showercurtrain_rec_0.50: 0.5000, toilet_rec_0.50: 0.9138, sink_rec_0.50: 0.5102, bathtub_rec_0.50: 0.8065, garbagebin_rec_0.50: 0.6283, mAR_0.50: 0.6772
+2021-10-08 16:02:26,063 - mmdet - INFO - Epoch [10][50/751]	lr: 1.000e-04, eta: 0:15:45, time: 0.467, data_time: 0.061, memory: 1645, loss_centerness: 0.6137, loss_bbox: 0.2905, loss_cls: 0.1526, loss: 1.0569, grad_norm: 0.7556
+2021-10-08 16:02:47,017 - mmdet - INFO - Epoch [10][100/751]	lr: 1.000e-04, eta: 0:15:23, time: 0.419, data_time: 0.011, memory: 1645, loss_centerness: 0.6133, loss_bbox: 0.2918, loss_cls: 0.1518, loss: 1.0568, grad_norm: 0.7639
+2021-10-08 16:03:08,212 - mmdet - INFO - Epoch [10][150/751]	lr: 1.000e-04, eta: 0:15:01, time: 0.424, data_time: 0.011, memory: 1645, loss_centerness: 0.6146, loss_bbox: 0.2879, loss_cls: 0.1531, loss: 1.0556, grad_norm: 0.7485
+2021-10-08 16:03:29,182 - mmdet - INFO - Epoch [10][200/751]	lr: 1.000e-04, eta: 0:14:40, time: 0.419, data_time: 0.012, memory: 1645, loss_centerness: 0.6151, loss_bbox: 0.2917, loss_cls: 0.1518, loss: 1.0586, grad_norm: 0.7524
+2021-10-08 16:03:50,361 - mmdet - INFO - Epoch [10][250/751]	lr: 1.000e-04, eta: 0:14:18, time: 0.424, data_time: 0.011, memory: 1645, loss_centerness: 0.6134, loss_bbox: 0.2909, loss_cls: 0.1520, loss: 1.0563, grad_norm: 0.7119
+2021-10-08 16:04:13,169 - mmdet - INFO - Epoch [10][300/751]	lr: 1.000e-04, eta: 0:13:57, time: 0.456, data_time: 0.011, memory: 1645, loss_centerness: 0.6150, loss_bbox: 0.2889, loss_cls: 0.1510, loss: 1.0549, grad_norm: 0.7498
+2021-10-08 16:04:34,124 - mmdet - INFO - Epoch [10][350/751]	lr: 1.000e-04, eta: 0:13:36, time: 0.419, data_time: 0.012, memory: 1645, loss_centerness: 0.6133, loss_bbox: 0.2890, loss_cls: 0.1500, loss: 1.0524, grad_norm: 0.7789
+2021-10-08 16:04:55,659 - mmdet - INFO - Epoch [10][400/751]	lr: 1.000e-04, eta: 0:13:14, time: 0.431, data_time: 0.011, memory: 1645, loss_centerness: 0.6134, loss_bbox: 0.2899, loss_cls: 0.1507, loss: 1.0540, grad_norm: 0.7395
+2021-10-08 16:05:17,283 - mmdet - INFO - Epoch [10][450/751]	lr: 1.000e-04, eta: 0:12:53, time: 0.432, data_time: 0.011, memory: 1645, loss_centerness: 0.6134, loss_bbox: 0.2893, loss_cls: 0.1515, loss: 1.0541, grad_norm: 0.7612
+2021-10-08 16:05:38,753 - mmdet - INFO - Epoch [10][500/751]	lr: 1.000e-04, eta: 0:12:31, time: 0.429, data_time: 0.011, memory: 1645, loss_centerness: 0.6144, loss_bbox: 0.2888, loss_cls: 0.1512, loss: 1.0544, grad_norm: 0.7219
+2021-10-08 16:06:00,291 - mmdet - INFO - Epoch [10][550/751]	lr: 1.000e-04, eta: 0:12:10, time: 0.431, data_time: 0.011, memory: 1645, loss_centerness: 0.6168, loss_bbox: 0.2878, loss_cls: 0.1505, loss: 1.0551, grad_norm: 0.7355
+2021-10-08 16:06:21,774 - mmdet - INFO - Epoch [10][600/751]	lr: 1.000e-04, eta: 0:11:49, time: 0.430, data_time: 0.012, memory: 1645, loss_centerness: 0.6140, loss_bbox: 0.2876, loss_cls: 0.1514, loss: 1.0531, grad_norm: 0.7571
+2021-10-08 16:06:43,058 - mmdet - INFO - Epoch [10][650/751]	lr: 1.000e-04, eta: 0:11:27, time: 0.426, data_time: 0.011, memory: 1645, loss_centerness: 0.6128, loss_bbox: 0.2914, loss_cls: 0.1517, loss: 1.0559, grad_norm: 0.7219
+2021-10-08 16:07:04,251 - mmdet - INFO - Epoch [10][700/751]	lr: 1.000e-04, eta: 0:11:06, time: 0.424, data_time: 0.011, memory: 1645, loss_centerness: 0.6142, loss_bbox: 0.2884, loss_cls: 0.1520, loss: 1.0545, grad_norm: 0.7464
+2021-10-08 16:07:25,816 - mmdet - INFO - Epoch [10][750/751]	lr: 1.000e-04, eta: 0:10:44, time: 0.431, data_time: 0.011, memory: 1645, loss_centerness: 0.6135, loss_bbox: 0.2890, loss_cls: 0.1509, loss: 1.0534, grad_norm: 0.7566
+2021-10-08 16:07:26,410 - mmdet - INFO - Saving checkpoint at 10 epochs
+2021-10-08 16:07:41,852 - mmdet - INFO - 
++----------------+---------+---------+---------+---------+
+| classes        | AP_0.25 | AR_0.25 | AP_0.50 | AR_0.50 |
++----------------+---------+---------+---------+---------+
+| cabinet        | 0.4698  | 0.8817  | 0.2634  | 0.6237  |
+| bed            | 0.8693  | 0.9383  | 0.8074  | 0.8765  |
+| chair          | 0.9384  | 0.9686  | 0.8449  | 0.8852  |
+| sofa           | 0.8905  | 0.9794  | 0.7490  | 0.9278  |
+| table          | 0.6665  | 0.8657  | 0.5831  | 0.7571  |
+| door           | 0.5673  | 0.8651  | 0.3274  | 0.5653  |
+| window         | 0.4909  | 0.8227  | 0.2226  | 0.5000  |
+| bookshelf      | 0.5518  | 0.9351  | 0.4995  | 0.8701  |
+| picture        | 0.0871  | 0.2838  | 0.0331  | 0.0991  |
+| counter        | 0.4482  | 0.8077  | 0.2203  | 0.5000  |
+| desk           | 0.7199  | 0.9843  | 0.5116  | 0.8661  |
+| curtain        | 0.5111  | 0.8806  | 0.3279  | 0.6418  |
+| refrigerator   | 0.4091  | 0.9123  | 0.3412  | 0.7719  |
+| showercurtrain | 0.6746  | 0.9643  | 0.1207  | 0.4643  |
+| toilet         | 1.0000  | 1.0000  | 0.8379  | 0.8793  |
+| sink           | 0.6456  | 0.7755  | 0.4176  | 0.5408  |
+| bathtub        | 0.8477  | 0.9355  | 0.7007  | 0.7419  |
+| garbagebin     | 0.5245  | 0.8491  | 0.3972  | 0.6396  |
++----------------+---------+---------+---------+---------+
+| Overall        | 0.6285  | 0.8694  | 0.4559  | 0.6750  |
++----------------+---------+---------+---------+---------+
+2021-10-08 16:07:41,965 - mmdet - INFO - Exp name: fcaf3d_scannet-3d-18class.py
+2021-10-08 16:07:41,966 - mmdet - INFO - Epoch(val) [10][156]	cabinet_AP_0.25: 0.4698, bed_AP_0.25: 0.8693, chair_AP_0.25: 0.9384, sofa_AP_0.25: 0.8905, table_AP_0.25: 0.6665, door_AP_0.25: 0.5673, window_AP_0.25: 0.4909, bookshelf_AP_0.25: 0.5518, picture_AP_0.25: 0.0871, counter_AP_0.25: 0.4482, desk_AP_0.25: 0.7199, curtain_AP_0.25: 0.5111, refrigerator_AP_0.25: 0.4091, showercurtrain_AP_0.25: 0.6746, toilet_AP_0.25: 1.0000, sink_AP_0.25: 0.6456, bathtub_AP_0.25: 0.8477, garbagebin_AP_0.25: 0.5245, mAP_0.25: 0.6285, cabinet_rec_0.25: 0.8817, bed_rec_0.25: 0.9383, chair_rec_0.25: 0.9686, sofa_rec_0.25: 0.9794, table_rec_0.25: 0.8657, door_rec_0.25: 0.8651, window_rec_0.25: 0.8227, bookshelf_rec_0.25: 0.9351, picture_rec_0.25: 0.2838, counter_rec_0.25: 0.8077, desk_rec_0.25: 0.9843, curtain_rec_0.25: 0.8806, refrigerator_rec_0.25: 0.9123, showercurtrain_rec_0.25: 0.9643, toilet_rec_0.25: 1.0000, sink_rec_0.25: 0.7755, bathtub_rec_0.25: 0.9355, garbagebin_rec_0.25: 0.8491, mAR_0.25: 0.8694, cabinet_AP_0.50: 0.2634, bed_AP_0.50: 0.8074, chair_AP_0.50: 0.8449, sofa_AP_0.50: 0.7490, table_AP_0.50: 0.5831, door_AP_0.50: 0.3274, window_AP_0.50: 0.2226, bookshelf_AP_0.50: 0.4995, picture_AP_0.50: 0.0331, counter_AP_0.50: 0.2203, desk_AP_0.50: 0.5116, curtain_AP_0.50: 0.3279, refrigerator_AP_0.50: 0.3412, showercurtrain_AP_0.50: 0.1207, toilet_AP_0.50: 0.8379, sink_AP_0.50: 0.4176, bathtub_AP_0.50: 0.7007, garbagebin_AP_0.50: 0.3972, mAP_0.50: 0.4559, cabinet_rec_0.50: 0.6237, bed_rec_0.50: 0.8765, chair_rec_0.50: 0.8852, sofa_rec_0.50: 0.9278, table_rec_0.50: 0.7571, door_rec_0.50: 0.5653, window_rec_0.50: 0.5000, bookshelf_rec_0.50: 0.8701, picture_rec_0.50: 0.0991, counter_rec_0.50: 0.5000, desk_rec_0.50: 0.8661, curtain_rec_0.50: 0.6418, refrigerator_rec_0.50: 0.7719, showercurtrain_rec_0.50: 0.4643, toilet_rec_0.50: 0.8793, sink_rec_0.50: 0.5408, bathtub_rec_0.50: 0.7419, garbagebin_rec_0.50: 0.6396, mAR_0.50: 0.6750
+2021-10-08 16:08:05,747 - mmdet - INFO - Epoch [11][50/751]	lr: 1.000e-04, eta: 0:10:23, time: 0.476, data_time: 0.060, memory: 1645, loss_centerness: 0.6141, loss_bbox: 0.2907, loss_cls: 0.1526, loss: 1.0574, grad_norm: 0.7366
+2021-10-08 16:08:26,484 - mmdet - INFO - Epoch [11][100/751]	lr: 1.000e-04, eta: 0:10:01, time: 0.415, data_time: 0.011, memory: 1645, loss_centerness: 0.6145, loss_bbox: 0.2884, loss_cls: 0.1496, loss: 1.0525, grad_norm: 0.8040
+2021-10-08 16:08:47,606 - mmdet - INFO - Epoch [11][150/751]	lr: 1.000e-04, eta: 0:09:40, time: 0.422, data_time: 0.011, memory: 1645, loss_centerness: 0.6113, loss_bbox: 0.2873, loss_cls: 0.1502, loss: 1.0488, grad_norm: 0.7359
+2021-10-08 16:09:08,698 - mmdet - INFO - Epoch [11][200/751]	lr: 1.000e-04, eta: 0:09:18, time: 0.422, data_time: 0.011, memory: 1645, loss_centerness: 0.6138, loss_bbox: 0.2873, loss_cls: 0.1470, loss: 1.0481, grad_norm: 0.7420
+2021-10-08 16:09:30,404 - mmdet - INFO - Epoch [11][250/751]	lr: 1.000e-04, eta: 0:08:57, time: 0.434, data_time: 0.011, memory: 1645, loss_centerness: 0.6148, loss_bbox: 0.2894, loss_cls: 0.1511, loss: 1.0553, grad_norm: 0.7696
+2021-10-08 16:09:52,075 - mmdet - INFO - Epoch [11][300/751]	lr: 1.000e-04, eta: 0:08:35, time: 0.433, data_time: 0.011, memory: 1645, loss_centerness: 0.6138, loss_bbox: 0.2848, loss_cls: 0.1495, loss: 1.0481, grad_norm: 0.7798
+2021-10-08 16:10:13,765 - mmdet - INFO - Epoch [11][350/751]	lr: 1.000e-04, eta: 0:08:14, time: 0.434, data_time: 0.012, memory: 1645, loss_centerness: 0.6115, loss_bbox: 0.2871, loss_cls: 0.1480, loss: 1.0466, grad_norm: 0.7597
+2021-10-08 16:10:35,493 - mmdet - INFO - Epoch [11][400/751]	lr: 1.000e-04, eta: 0:07:52, time: 0.435, data_time: 0.011, memory: 1645, loss_centerness: 0.6139, loss_bbox: 0.2875, loss_cls: 0.1477, loss: 1.0491, grad_norm: 0.7696
+2021-10-08 16:10:56,755 - mmdet - INFO - Epoch [11][450/751]	lr: 1.000e-04, eta: 0:07:31, time: 0.425, data_time: 0.011, memory: 1645, loss_centerness: 0.6145, loss_bbox: 0.2866, loss_cls: 0.1491, loss: 1.0502, grad_norm: 0.7672
+2021-10-08 16:11:18,146 - mmdet - INFO - Epoch [11][500/751]	lr: 1.000e-04, eta: 0:07:09, time: 0.428, data_time: 0.011, memory: 1645, loss_centerness: 0.6128, loss_bbox: 0.2903, loss_cls: 0.1491, loss: 1.0521, grad_norm: 0.7532
+2021-10-08 16:11:39,577 - mmdet - INFO - Epoch [11][550/751]	lr: 1.000e-04, eta: 0:06:48, time: 0.429, data_time: 0.011, memory: 1645, loss_centerness: 0.6127, loss_bbox: 0.2872, loss_cls: 0.1496, loss: 1.0495, grad_norm: 0.7816
+2021-10-08 16:12:01,307 - mmdet - INFO - Epoch [11][600/751]	lr: 1.000e-04, eta: 0:06:27, time: 0.435, data_time: 0.011, memory: 1645, loss_centerness: 0.6139, loss_bbox: 0.2851, loss_cls: 0.1484, loss: 1.0474, grad_norm: 0.7549
+2021-10-08 16:12:23,015 - mmdet - INFO - Epoch [11][650/751]	lr: 1.000e-04, eta: 0:06:05, time: 0.434, data_time: 0.011, memory: 1645, loss_centerness: 0.6137, loss_bbox: 0.2846, loss_cls: 0.1459, loss: 1.0442, grad_norm: 0.7480
+2021-10-08 16:12:44,121 - mmdet - INFO - Epoch [11][700/751]	lr: 1.000e-04, eta: 0:05:44, time: 0.422, data_time: 0.012, memory: 1645, loss_centerness: 0.6116, loss_bbox: 0.2836, loss_cls: 0.1472, loss: 1.0424, grad_norm: 0.8347
+2021-10-08 16:13:05,317 - mmdet - INFO - Epoch [11][750/751]	lr: 1.000e-04, eta: 0:05:22, time: 0.424, data_time: 0.012, memory: 1645, loss_centerness: 0.6124, loss_bbox: 0.2882, loss_cls: 0.1492, loss: 1.0499, grad_norm: 0.8097
+2021-10-08 16:13:05,835 - mmdet - INFO - Saving checkpoint at 11 epochs
+2021-10-08 16:13:21,077 - mmdet - INFO - 
++----------------+---------+---------+---------+---------+
+| classes        | AP_0.25 | AR_0.25 | AP_0.50 | AR_0.50 |
++----------------+---------+---------+---------+---------+
+| cabinet        | 0.4704  | 0.8763  | 0.2503  | 0.6022  |
+| bed            | 0.8683  | 0.9383  | 0.7958  | 0.8642  |
+| chair          | 0.9392  | 0.9671  | 0.8450  | 0.8830  |
+| sofa           | 0.8952  | 0.9794  | 0.7434  | 0.9175  |
+| table          | 0.6691  | 0.8714  | 0.5844  | 0.7686  |
+| door           | 0.5684  | 0.8758  | 0.3354  | 0.5867  |
+| window         | 0.4916  | 0.8262  | 0.2430  | 0.5319  |
+| bookshelf      | 0.5771  | 0.9091  | 0.4743  | 0.8442  |
+| picture        | 0.0914  | 0.2883  | 0.0353  | 0.0991  |
+| counter        | 0.4537  | 0.8269  | 0.1844  | 0.4808  |
+| desk           | 0.7381  | 0.9843  | 0.5034  | 0.8583  |
+| curtain        | 0.5398  | 0.8955  | 0.3932  | 0.6716  |
+| refrigerator   | 0.4435  | 0.9123  | 0.3634  | 0.7895  |
+| showercurtrain | 0.6953  | 0.9643  | 0.1809  | 0.5714  |
+| toilet         | 0.9992  | 1.0000  | 0.8519  | 0.8793  |
+| sink           | 0.6383  | 0.7653  | 0.3887  | 0.5102  |
+| bathtub        | 0.8406  | 0.9355  | 0.7758  | 0.8065  |
+| garbagebin     | 0.5178  | 0.8472  | 0.3973  | 0.6377  |
++----------------+---------+---------+---------+---------+
+| Overall        | 0.6354  | 0.8702  | 0.4637  | 0.6835  |
++----------------+---------+---------+---------+---------+
+2021-10-08 16:13:21,188 - mmdet - INFO - Exp name: fcaf3d_scannet-3d-18class.py
+2021-10-08 16:13:21,188 - mmdet - INFO - Epoch(val) [11][156]	cabinet_AP_0.25: 0.4704, bed_AP_0.25: 0.8683, chair_AP_0.25: 0.9392, sofa_AP_0.25: 0.8952, table_AP_0.25: 0.6691, door_AP_0.25: 0.5684, window_AP_0.25: 0.4916, bookshelf_AP_0.25: 0.5771, picture_AP_0.25: 0.0914, counter_AP_0.25: 0.4537, desk_AP_0.25: 0.7381, curtain_AP_0.25: 0.5398, refrigerator_AP_0.25: 0.4435, showercurtrain_AP_0.25: 0.6953, toilet_AP_0.25: 0.9992, sink_AP_0.25: 0.6383, bathtub_AP_0.25: 0.8406, garbagebin_AP_0.25: 0.5178, mAP_0.25: 0.6354, cabinet_rec_0.25: 0.8763, bed_rec_0.25: 0.9383, chair_rec_0.25: 0.9671, sofa_rec_0.25: 0.9794, table_rec_0.25: 0.8714, door_rec_0.25: 0.8758, window_rec_0.25: 0.8262, bookshelf_rec_0.25: 0.9091, picture_rec_0.25: 0.2883, counter_rec_0.25: 0.8269, desk_rec_0.25: 0.9843, curtain_rec_0.25: 0.8955, refrigerator_rec_0.25: 0.9123, showercurtrain_rec_0.25: 0.9643, toilet_rec_0.25: 1.0000, sink_rec_0.25: 0.7653, bathtub_rec_0.25: 0.9355, garbagebin_rec_0.25: 0.8472, mAR_0.25: 0.8702, cabinet_AP_0.50: 0.2503, bed_AP_0.50: 0.7958, chair_AP_0.50: 0.8450, sofa_AP_0.50: 0.7434, table_AP_0.50: 0.5844, door_AP_0.50: 0.3354, window_AP_0.50: 0.2430, bookshelf_AP_0.50: 0.4743, picture_AP_0.50: 0.0353, counter_AP_0.50: 0.1844, desk_AP_0.50: 0.5034, curtain_AP_0.50: 0.3932, refrigerator_AP_0.50: 0.3634, showercurtrain_AP_0.50: 0.1809, toilet_AP_0.50: 0.8519, sink_AP_0.50: 0.3887, bathtub_AP_0.50: 0.7758, garbagebin_AP_0.50: 0.3973, mAP_0.50: 0.4637, cabinet_rec_0.50: 0.6022, bed_rec_0.50: 0.8642, chair_rec_0.50: 0.8830, sofa_rec_0.50: 0.9175, table_rec_0.50: 0.7686, door_rec_0.50: 0.5867, window_rec_0.50: 0.5319, bookshelf_rec_0.50: 0.8442, picture_rec_0.50: 0.0991, counter_rec_0.50: 0.4808, desk_rec_0.50: 0.8583, curtain_rec_0.50: 0.6716, refrigerator_rec_0.50: 0.7895, showercurtrain_rec_0.50: 0.5714, toilet_rec_0.50: 0.8793, sink_rec_0.50: 0.5102, bathtub_rec_0.50: 0.8065, garbagebin_rec_0.50: 0.6377, mAR_0.50: 0.6835
+2021-10-08 16:13:45,189 - mmdet - INFO - Epoch [12][50/751]	lr: 1.000e-05, eta: 0:05:00, time: 0.480, data_time: 0.061, memory: 1645, loss_centerness: 0.6130, loss_bbox: 0.2865, loss_cls: 0.1483, loss: 1.0478, grad_norm: 0.7262
+2021-10-08 16:14:05,836 - mmdet - INFO - Epoch [12][100/751]	lr: 1.000e-05, eta: 0:04:39, time: 0.413, data_time: 0.011, memory: 1645, loss_centerness: 0.6134, loss_bbox: 0.2831, loss_cls: 0.1455, loss: 1.0420, grad_norm: 0.6929
+2021-10-08 16:14:26,763 - mmdet - INFO - Epoch [12][150/751]	lr: 1.000e-05, eta: 0:04:17, time: 0.419, data_time: 0.011, memory: 1645, loss_centerness: 0.6128, loss_bbox: 0.2843, loss_cls: 0.1486, loss: 1.0457, grad_norm: 0.7327
+2021-10-08 16:14:48,188 - mmdet - INFO - Epoch [12][200/751]	lr: 1.000e-05, eta: 0:03:56, time: 0.429, data_time: 0.011, memory: 1645, loss_centerness: 0.6152, loss_bbox: 0.2834, loss_cls: 0.1468, loss: 1.0455, grad_norm: 0.7264
+2021-10-08 16:15:09,605 - mmdet - INFO - Epoch [12][250/751]	lr: 1.000e-05, eta: 0:03:34, time: 0.428, data_time: 0.011, memory: 1645, loss_centerness: 0.6112, loss_bbox: 0.2831, loss_cls: 0.1488, loss: 1.0432, grad_norm: 0.7033
+2021-10-08 16:15:31,448 - mmdet - INFO - Epoch [12][300/751]	lr: 1.000e-05, eta: 0:03:13, time: 0.437, data_time: 0.011, memory: 1645, loss_centerness: 0.6143, loss_bbox: 0.2847, loss_cls: 0.1459, loss: 1.0450, grad_norm: 0.7160
+2021-10-08 16:15:52,827 - mmdet - INFO - Epoch [12][350/751]	lr: 1.000e-05, eta: 0:02:52, time: 0.428, data_time: 0.011, memory: 1645, loss_centerness: 0.6122, loss_bbox: 0.2818, loss_cls: 0.1458, loss: 1.0398, grad_norm: 0.6915
+2021-10-08 16:16:14,465 - mmdet - INFO - Epoch [12][400/751]	lr: 1.000e-05, eta: 0:02:30, time: 0.433, data_time: 0.011, memory: 1645, loss_centerness: 0.6145, loss_bbox: 0.2829, loss_cls: 0.1477, loss: 1.0451, grad_norm: 0.7086
+2021-10-08 16:16:35,921 - mmdet - INFO - Epoch [12][450/751]	lr: 1.000e-05, eta: 0:02:09, time: 0.429, data_time: 0.011, memory: 1645, loss_centerness: 0.6132, loss_bbox: 0.2844, loss_cls: 0.1467, loss: 1.0443, grad_norm: 0.6993
+2021-10-08 16:16:57,234 - mmdet - INFO - Epoch [12][500/751]	lr: 1.000e-05, eta: 0:01:47, time: 0.426, data_time: 0.011, memory: 1645, loss_centerness: 0.6118, loss_bbox: 0.2880, loss_cls: 0.1462, loss: 1.0461, grad_norm: 0.7563
+2021-10-08 16:17:19,390 - mmdet - INFO - Epoch [12][550/751]	lr: 1.000e-05, eta: 0:01:26, time: 0.443, data_time: 0.012, memory: 1645, loss_centerness: 0.6136, loss_bbox: 0.2845, loss_cls: 0.1460, loss: 1.0441, grad_norm: 0.7136
+2021-10-08 16:17:40,844 - mmdet - INFO - Epoch [12][600/751]	lr: 1.000e-05, eta: 0:01:04, time: 0.429, data_time: 0.011, memory: 1645, loss_centerness: 0.6127, loss_bbox: 0.2841, loss_cls: 0.1487, loss: 1.0456, grad_norm: 0.6990
+2021-10-08 16:18:02,379 - mmdet - INFO - Epoch [12][650/751]	lr: 1.000e-05, eta: 0:00:43, time: 0.430, data_time: 0.011, memory: 1645, loss_centerness: 0.6134, loss_bbox: 0.2804, loss_cls: 0.1450, loss: 1.0388, grad_norm: 0.7005
+2021-10-08 16:18:23,287 - mmdet - INFO - Epoch [12][700/751]	lr: 1.000e-05, eta: 0:00:21, time: 0.418, data_time: 0.012, memory: 1645, loss_centerness: 0.6152, loss_bbox: 0.2815, loss_cls: 0.1444, loss: 1.0410, grad_norm: 0.6938
+2021-10-08 16:18:44,570 - mmdet - INFO - Epoch [12][750/751]	lr: 1.000e-05, eta: 0:00:00, time: 0.425, data_time: 0.011, memory: 1645, loss_centerness: 0.6117, loss_bbox: 0.2800, loss_cls: 0.1432, loss: 1.0349, grad_norm: 0.7437
+2021-10-08 16:18:45,070 - mmdet - INFO - Saving checkpoint at 12 epochs
+2021-10-08 16:19:00,499 - mmdet - INFO - 
++----------------+---------+---------+---------+---------+
+| classes        | AP_0.25 | AR_0.25 | AP_0.50 | AR_0.50 |
++----------------+---------+---------+---------+---------+
+| cabinet        | 0.4692  | 0.8790  | 0.2548  | 0.6102  |
+| bed            | 0.8672  | 0.9259  | 0.8084  | 0.8765  |
+| chair          | 0.9386  | 0.9671  | 0.8473  | 0.8830  |
+| sofa           | 0.8943  | 0.9794  | 0.7478  | 0.9175  |
+| table          | 0.6591  | 0.8714  | 0.5769  | 0.7571  |
+| door           | 0.5674  | 0.8715  | 0.3353  | 0.5696  |
+| window         | 0.4936  | 0.8156  | 0.2246  | 0.5213  |
+| bookshelf      | 0.5643  | 0.9091  | 0.4580  | 0.8312  |
+| picture        | 0.0921  | 0.2838  | 0.0284  | 0.0991  |
+| counter        | 0.4309  | 0.8269  | 0.2237  | 0.5000  |
+| desk           | 0.7294  | 0.9764  | 0.5087  | 0.8661  |
+| curtain        | 0.5389  | 0.8806  | 0.3937  | 0.6866  |
+| refrigerator   | 0.4340  | 0.9123  | 0.3523  | 0.7544  |
+| showercurtrain | 0.6917  | 0.9643  | 0.1804  | 0.5357  |
+| toilet         | 0.9994  | 1.0000  | 0.9003  | 0.9138  |
+| sink           | 0.6267  | 0.7551  | 0.4047  | 0.5204  |
+| bathtub        | 0.8430  | 0.9355  | 0.7855  | 0.8387  |
+| garbagebin     | 0.5193  | 0.8491  | 0.3924  | 0.6396  |
++----------------+---------+---------+---------+---------+
+| Overall        | 0.6311  | 0.8668  | 0.4680  | 0.6845  |
++----------------+---------+---------+---------+---------+
+2021-10-08 16:19:00,610 - mmdet - INFO - Exp name: fcaf3d_scannet-3d-18class.py
+2021-10-08 16:19:00,610 - mmdet - INFO - Epoch(val) [12][156]	cabinet_AP_0.25: 0.4692, bed_AP_0.25: 0.8672, chair_AP_0.25: 0.9386, sofa_AP_0.25: 0.8943, table_AP_0.25: 0.6591, door_AP_0.25: 0.5674, window_AP_0.25: 0.4936, bookshelf_AP_0.25: 0.5643, picture_AP_0.25: 0.0921, counter_AP_0.25: 0.4309, desk_AP_0.25: 0.7294, curtain_AP_0.25: 0.5389, refrigerator_AP_0.25: 0.4340, showercurtrain_AP_0.25: 0.6917, toilet_AP_0.25: 0.9994, sink_AP_0.25: 0.6267, bathtub_AP_0.25: 0.8430, garbagebin_AP_0.25: 0.5193, mAP_0.25: 0.6311, cabinet_rec_0.25: 0.8790, bed_rec_0.25: 0.9259, chair_rec_0.25: 0.9671, sofa_rec_0.25: 0.9794, table_rec_0.25: 0.8714, door_rec_0.25: 0.8715, window_rec_0.25: 0.8156, bookshelf_rec_0.25: 0.9091, picture_rec_0.25: 0.2838, counter_rec_0.25: 0.8269, desk_rec_0.25: 0.9764, curtain_rec_0.25: 0.8806, refrigerator_rec_0.25: 0.9123, showercurtrain_rec_0.25: 0.9643, toilet_rec_0.25: 1.0000, sink_rec_0.25: 0.7551, bathtub_rec_0.25: 0.9355, garbagebin_rec_0.25: 0.8491, mAR_0.25: 0.8668, cabinet_AP_0.50: 0.2548, bed_AP_0.50: 0.8084, chair_AP_0.50: 0.8473, sofa_AP_0.50: 0.7478, table_AP_0.50: 0.5769, door_AP_0.50: 0.3353, window_AP_0.50: 0.2246, bookshelf_AP_0.50: 0.4580, picture_AP_0.50: 0.0284, counter_AP_0.50: 0.2237, desk_AP_0.50: 0.5087, curtain_AP_0.50: 0.3937, refrigerator_AP_0.50: 0.3523, showercurtrain_AP_0.50: 0.1804, toilet_AP_0.50: 0.9003, sink_AP_0.50: 0.4047, bathtub_AP_0.50: 0.7855, garbagebin_AP_0.50: 0.3924, mAP_0.50: 0.4680, cabinet_rec_0.50: 0.6102, bed_rec_0.50: 0.8765, chair_rec_0.50: 0.8830, sofa_rec_0.50: 0.9175, table_rec_0.50: 0.7571, door_rec_0.50: 0.5696, window_rec_0.50: 0.5213, bookshelf_rec_0.50: 0.8312, picture_rec_0.50: 0.0991, counter_rec_0.50: 0.5000, desk_rec_0.50: 0.8661, curtain_rec_0.50: 0.6866, refrigerator_rec_0.50: 0.7544, showercurtrain_rec_0.50: 0.5357, toilet_rec_0.50: 0.9138, sink_rec_0.50: 0.5204, bathtub_rec_0.50: 0.8387, garbagebin_rec_0.50: 0.6396, mAR_0.50: 0.6845

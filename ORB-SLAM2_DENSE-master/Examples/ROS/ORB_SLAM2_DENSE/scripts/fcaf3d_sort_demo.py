@@ -30,8 +30,18 @@ mot_tracker = Sort(max_age=3, min_hits=1, iou_threshold=0.3)
 #config_file = '/ae_src/ros/src/MultiMap3D/configs/fcaf3d/fcaf3d_8x2_scannet-3d-18class.py'
 #checkpoint_file = '/ae_src/ros/src/MultiMap3D/checkpoints/fcaf3d_8x2_scannet-3d-18class_20220805_084956.pth'
 
-config_file = '/ae_src/ros/src/MultiMap3D/configs/fcaf3d/fcaf3d_scannet-3d-18class.py'
-checkpoint_file = '/ae_src/ros/src/MultiMap3D/checkpoints/fcaf3d_scannet-3d-18class_20211007_144747.pth'
+# Scannet 18 labels
+#config_file = '/ae_src/ros/src/MultiMap3D/configs/fcaf3d/fcaf3d_scannet-3d-18class.py'
+#checkpoint_file = '/ae_src/ros/src/MultiMap3D/checkpoints/fcaf3d_scannet-3d-18class_20211007_144747.pth'
+
+# Scannet 18 labels, 3 scales (smaller weights file -> faster)
+#config_file = '/ae_src/ros/src/MultiMap3D/configs/fcaf3d/fcaf3d_3scales_scannet-3d-18class.py'
+#checkpoint_file = '/ae_src/ros/src/MultiMap3D/checkpoints/fcaf3d_3scales_scannet-3d-18class_20211008_191702.pth'
+
+# Scannet 18 labels, 2 scales (even smaller weights file -> even faster)
+config_file = '/ae_src/ros/src/MultiMap3D/configs/fcaf3d/fcaf3d_2scales_scannet-3d-18class.py'
+checkpoint_file = '/ae_src/ros/src/MultiMap3D/checkpoints/fcaf3d_2scales_scannet-3d-18class_20211008_151041.pth'
+
 
 model = init_model(config_file, checkpoint_file, device='cuda:0')
 
