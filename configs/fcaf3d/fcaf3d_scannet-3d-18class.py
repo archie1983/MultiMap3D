@@ -1,23 +1,30 @@
-_base_ = ['../_base_/models/fcaf3d.py', '../_base_/default_runtime.py']
-n_points = 100000   # AE: maximum number of point clouds(?)
+#_base_ = ['fcaf3d.py']
+#_base_ = ['../_base_/models/fcaf3d.py', '../_base_/default_runtime.py']
+_base_ = ['../_base_/models/fcaf3d.py']
+n_points = 100000
 
-dataset_type = 'ScanNetDataset'     # AE: dataset type
-data_root = './data/scannet/'       # AE: data path
+model = dict(
+    neck_with_head=dict(
+        n_classes=18,
+        n_reg_outs=6,
+        loss_bbox=dict(with_yaw=False)))
+
+dataset_type = 'ScanNetDataset'
+data_root = './data/scannet/'
 class_names = ('cabinet', 'bed', 'chair', 'sofa', 'table', 'door', 'window',
                'bookshelf', 'picture', 'counter', 'desk', 'curtain',
                'refrigerator', 'showercurtrain', 'toilet', 'sink', 'bathtub',
                'garbagebin')
-train_pipeline = [ # AE: Training pipeline
+train_pipeline = [
     dict(
-        type='LoadPointsFromFile',      # AE: The first process is used to read points, for more details, please refer to mmdet3d.datasets.pipelines.indoor_loading
-        coord_type='DEPTH',     # AE: whether to use transform height
+        type='LoadPointsFromFile',
+        coord_type='DEPTH',
         shift_height=False,
-        use_color=True,
         load_dim=6,
-        use_dim=[0, 1, 2, 3, 4, 5]),    # AE: Which dimensions of the read points are used
-    dict(type='LoadAnnotations3D'),     # AE: The second process is used to read annotations. For more details, please refer to mmdet3d.datasets.pipelines.indoor_loading
+        use_dim=[0, 1, 2, 3, 4, 5]),
+    dict(type='LoadAnnotations3D'),
     dict(type='GlobalAlignment', rotation_axis=2),
-    dict(type='PointSample', num_points=n_points),      # AE: Indoor point sampling, for more details, please refer to mmdet3d.datasets.pipelines.indoor_sample
+    dict(type='IndoorPointSample', num_points=n_points),
     dict(
         type='RandomFlip3D',
         sync_2d=False,
@@ -29,16 +36,16 @@ train_pipeline = [ # AE: Training pipeline
         scale_ratio_range=[.9, 1.1],
         translation_std=[.1, .1, .1],
         shift_height=False),
-    dict(type='NormalizePointsColor', color_mean=None),
     dict(type='DefaultFormatBundle3D', class_names=class_names),
-    dict(type='Collect3D', keys=['points', 'gt_bboxes_3d', 'gt_labels_3d'])
+    dict(
+        type='Collect3D',
+        keys=['points', 'gt_bboxes_3d', 'gt_labels_3d'])
 ]
 test_pipeline = [
     dict(
         type='LoadPointsFromFile',
         coord_type='DEPTH',
         shift_height=False,
-        use_color=True,
         load_dim=6,
         use_dim=[0, 1, 2, 3, 4, 5]),
     dict(type='GlobalAlignment', rotation_axis=2),
@@ -58,8 +65,7 @@ test_pipeline = [
                 sync_2d=False,
                 flip_ratio_bev_horizontal=0.5,
                 flip_ratio_bev_vertical=0.5),
-            dict(type='PointSample', num_points=n_points),
-            # dict(type='NormalizePointsColor', color_mean=None),
+            dict(type='IndoorPointSample', num_points=n_points),
             dict(
                 type='DefaultFormatBundle3D',
                 class_names=class_names,
@@ -97,9 +103,3 @@ data = dict(
         classes=class_names,
         test_mode=True,
         box_type_3d='Depth'))
-
-optimizer = dict(type='AdamW', lr=0.001, weight_decay=0.0001)
-optimizer_config = dict(grad_clip=dict(max_norm=10, norm_type=2))
-lr_config = dict(policy='step', warmup=None, step=[8, 11])
-runner = dict(type='EpochBasedRunner', max_epochs=12)
-custom_hooks = [dict(type='EmptyCacheHook', after_iter=True)]
